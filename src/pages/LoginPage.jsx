@@ -1,109 +1,158 @@
-import { useState } from 'react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { PaperPlaneTilt, WarningCircle, CheckCircle } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 
-const LoginPage = () => {
-  // State giả lập để xử lý form
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+export default function LoginPage() {
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    alert(`Đang đăng nhập với: ${loginEmail}`);
-  };
-
-  const handleRegister = (e) => {
-    e.preventDefault();
-    alert("Chuyển hướng xử lý Đăng ký!");
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem("access_token", data.access_token);
+        storage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user)); // luon luu user de dung o Home
+        setSuccess(`Chào mừng trở lại, ${data.user.name}. Đang chuyển hướng...`);
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        setError(data.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
+    } catch (err) {
+      setError("Không thể kết nối tới máy chủ.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    // Background Cinematic: Dùng link ảnh sân bay hoàng hôn làm nền
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 relative"
-      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="min-h-[100dvh] flex bg-zinc-50 font-sans text-zinc-900 selection:bg-blue-600 selection:text-white"
     >
-      {/* Lớp phủ màu tối (Overlay) để làm nổi bật cái form kính mờ */}
-      <div className="absolute inset-0 bg-slate-900/50"></div>
-
-      {/* Container chính: Hiệu ứng Kính mờ (Glassmorphism) */}
-      <div className="relative z-10 w-full max-w-5xl bg-white/10 backdrop-blur-lg border border-white/20 p-8 md:p-12 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col md:flex-row gap-8">
+      
+      {/* Left: Form Side */}
+      <div className="w-full lg:w-[45%] flex flex-col justify-center px-8 md:px-16 lg:px-24">
         
-        {/* Phần bên trái: ĐĂNG NHẬP (Tông màu Xanh Teal/Blue) */}
-        <div className="flex-1 flex flex-col justify-center p-8 bg-slate-800/40 rounded-2xl border border-cyan-500/30 hover:bg-slate-800/60 hover:border-cyan-400/50 transition-all duration-300">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-white mb-2 tracking-wider drop-shadow-md">WELCOME BACK</h2>
-            <p className="text-cyan-200 text-sm">Unlock and Manage Your Airline Operations</p>
-          </div>
-          
-          <form onSubmit={handleLogin} className="w-full space-y-5">
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-cyan-100/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" 
-              required
-            />
-            <input 
-              type="password" 
-              placeholder="Password" 
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-cyan-100/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" 
-              required
-            />
-            <button 
-              type="submit"
-              className="w-full mt-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 hover:shadow-cyan-500/30 transition-all duration-300"
-            >
-              ACCESS YOUR CONTROL PANEL
-            </button>
-            <div className="text-center mt-4">
-              <a href="#" className="text-sm text-cyan-300 hover:text-white transition-colors">Forgot Password?</a>
+        <div 
+          onClick={() => navigate("/")} 
+          className="text-2xl font-bold tracking-tighter text-zinc-900 cursor-pointer flex items-center gap-2 mb-16"
+        >
+          <PaperPlaneTilt weight="fill" className="text-blue-600" />
+          SKYLINK
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full"
+        >
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Đăng nhập</h1>
+          <p className="text-zinc-500 mb-8 font-medium">Truy cập tài khoản Skylink của bạn.</p>
+
+          {error && (
+            <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100">
+              <WarningCircle size={20} weight="fill" className="mt-0.5 shrink-0" />
+              <p className="text-sm font-medium leading-relaxed">{error}</p>
             </div>
-          </form>
-        </div>
+          )}
 
-        {/* Đường gạch giữa cho đẹp (chỉ hiện trên màn hình to) */}
-        <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-white/30 to-transparent"></div>
+          {success && (
+            <div className="mb-6 flex items-start gap-3 p-4 bg-green-50 text-green-700 rounded-xl border border-green-100">
+              <CheckCircle size={20} weight="fill" className="mt-0.5 shrink-0" />
+              <p className="text-sm font-medium leading-relaxed">{success}</p>
+            </div>
+          )}
 
-        {/* Phần bên phải: ĐĂNG KÝ (Tông màu Vàng/Cam) */}
-        <div className="flex-1 flex flex-col justify-center p-8 bg-amber-900/30 rounded-2xl border border-amber-500/30 hover:bg-amber-900/50 hover:border-amber-400/50 transition-all duration-300">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-amber-400 mb-2 tracking-wider drop-shadow-md">NEW TO SKYLINK?</h2>
-            <p className="text-amber-200/80 text-sm">Explore Aviation Roles and Join Our Network</p>
-          </div>
-          
-          <form onSubmit={handleRegister} className="w-full space-y-5">
-            <input 
-              type="text" 
-              placeholder="Full Name" 
-              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-100/50 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" 
-              required
-            />
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-100/50 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" 
-              required
-            />
-            <input 
-              type="password" 
-              placeholder="Create Password" 
-              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-100/50 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" 
-              required
-            />
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-zinc-700">Email</label>
+              <input 
+                type="email" 
+                placeholder="name@example.com"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-zinc-700">Mật khẩu</label>
+              <input 
+                type="password" 
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium"
+                required
+              />
+            </div>
+
+            <label className="flex items-center gap-3 cursor-pointer group pt-2 pb-4">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-600 transition-colors"
+              />
+              <span className="text-sm font-medium text-zinc-600 group-hover:text-zinc-900 transition-colors">
+                Ghi nhớ thiết bị này
+              </span>
+            </label>
+
             <button 
               type="submit"
-              className="w-full mt-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold py-4 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 hover:shadow-amber-500/30 transition-all duration-300"
+              disabled={loading}
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold py-4 px-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              LAUNCH YOUR CAREER
+              {loading ? "Đang xử lý..." : "Đăng nhập"}
             </button>
           </form>
-        </div>
 
+          <p className="text-zinc-500 text-sm mt-8 font-medium">
+            Chưa có tài khoản?{" "}
+            <button
+              onClick={() => navigate("/register")}
+              className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+            >
+              Đăng ký ngay
+            </button>
+          </p>
+        </motion.div>
       </div>
-    </div>
-  );
-};
 
-export default LoginPage;
+      {/* Right: Image Side */}
+      <div className="hidden lg:block w-[55%] p-4">
+        <div 
+          className="w-full h-full rounded-3xl bg-cover bg-center overflow-hidden"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}
+        >
+        </div>
+      </div>
+
+    </motion.div>
+  );
+}

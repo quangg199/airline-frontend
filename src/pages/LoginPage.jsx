@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PaperPlaneTilt, WarningCircle, CheckCircle } from "@phosphor-icons/react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
 
 export default function LoginPage() {
@@ -37,7 +38,7 @@ export default function LoginPage() {
       } else {
         setError(data.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
       }
-    } catch (err) {
+    } catch {
       setError("Không thể kết nối tới máy chủ.");
     } finally {
       setLoading(false);

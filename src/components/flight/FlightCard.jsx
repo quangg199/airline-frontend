@@ -94,9 +94,27 @@ export default function FlightCard({ flight, onSelect }) {
           <div className="text-[10px] font-bold text-blue-300/70 mb-1 uppercase tracking-wider">
             Giá vé trọn gói
           </div>
-          <div className="text-2xl md:text-3xl font-extrabold tracking-tighter text-white text-right mb-4">
-            {formatCurrency(flight.base_price)}
-          </div>
+
+          {/* Hiển thị giá gốc gạch ngang + badge giảm giá nếu có display_price < base_price */}
+          {flight.display_price && flight.display_price < flight.base_price ? (
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm text-blue-400/60 line-through">
+                  {formatCurrency(flight.base_price)}
+                </span>
+                <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  -10%
+                </span>
+              </div>
+              <div className="text-2xl md:text-3xl font-extrabold tracking-tighter text-emerald-400 text-right mb-4">
+                {formatCurrency(flight.display_price)}
+              </div>
+            </>
+          ) : (
+            <div className="text-2xl md:text-3xl font-extrabold tracking-tighter text-white text-right mb-4">
+              {formatCurrency(flight.display_price || flight.base_price)}
+            </div>
+          )}
           <button
             onClick={() => onSelect(flight)}
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:shadow-[0_8px_30px_rgba(37,99,235,0.3)] active:scale-95 transition-all duration-200 outline-none cursor-pointer text-sm"

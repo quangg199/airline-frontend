@@ -13,8 +13,9 @@ export default function ServiceSelection() {
   const [loading, setLoading] = useState(true);
 
   // Lấy thông tin chuyến bay đã chọn từ localStorage
-  const selectedFlight = JSON.parse(localStorage.getItem("selected_flight") || "{}");
-  const basePrice = selectedFlight?.base_price || 0;
+  const selectedFlights = JSON.parse(localStorage.getItem("selected_flights") || "[]");
+  // Tính tổng giá vé của tất cả các chuyến bay được chọn (chiều đi + chiều về)
+  const basePrice = selectedFlights.reduce((sum, f) => sum + Number(f.display_price || f.base_price), 0);
 
   // Gọi API lấy dịch vụ thật từ DB
   useEffect(() => {
@@ -169,10 +170,14 @@ export default function ServiceSelection() {
               </h2>
               
               <div className="space-y-4 mb-8">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-zinc-500 font-medium">Giá vé cơ bản</span>
-                  <span className="font-semibold text-zinc-900">{formatCurrency(basePrice)}</span>
-                </div>
+                {selectedFlights.map((f, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm border-b border-zinc-100 pb-2">
+                    <span className="text-zinc-500 font-medium">
+                      Chuyến {idx === 0 ? "đi" : "về"} ({f.departure_airport?.code} - {f.arrival_airport?.code})
+                    </span>
+                    <span className="font-semibold text-zinc-900">{formatCurrency(f.display_price || f.base_price)}</span>
+                  </div>
+                ))}
                 
                 {selectedServices.length > 0 ? (
                   <div className="space-y-3 pt-4 border-t border-zinc-100">

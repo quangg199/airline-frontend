@@ -52,22 +52,27 @@ export default function Navbar() {
           ? "bg-white/80 backdrop-blur-md border-b border-zinc-200/50 shadow-sm py-4" 
           : "bg-transparent py-6"
       }`}>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+        <div className="w-full px-6 md:px-12 flex justify-between items-center">
           
-          {/* Logo */}
-          <div 
-            onClick={() => navigate("/")} 
-            className="text-2xl font-bold tracking-tighter text-zinc-900 cursor-pointer flex items-center gap-2 select-none"
-          >
-            <PaperPlaneTilt weight="fill" className="text-blue-600 animate-pulse" />
-            SKYLINK
-          </div>
-          
-          {/* Nav Links */}
-          <div className="hidden md:flex gap-8 text-sm font-semibold text-zinc-650">
-            <a href="/flights" className="hover:text-blue-600 transition-colors">Chuyến bay</a>
-            <a href="/services" className="hover:text-blue-600 transition-colors">Dịch vụ</a>
-            <a href="/promotions" className="hover:text-blue-600 transition-colors">Khuyến mãi</a>
+          <div className="flex items-center gap-8 md:gap-16">
+            {/* Logo */}
+            <div 
+              onClick={() => navigate("/")} 
+              className="text-2xl font-bold tracking-tighter text-zinc-900 cursor-pointer flex items-center gap-2 select-none"
+            >
+              <PaperPlaneTilt weight="fill" className="text-blue-600 animate-pulse" />
+              SKYLINK
+            </div>
+            
+            {/* Nav Links */}
+            <div className="hidden md:flex gap-8 text-sm font-semibold text-zinc-650">
+              <a href="/flights" className="hover:text-blue-600 transition-colors">Chuyến bay</a>
+              <a href="/services" className="hover:text-blue-600 transition-colors">Dịch vụ</a>
+              <a href="/promotions" className="hover:text-blue-600 transition-colors">Khuyến mãi</a>
+              <a href="/skyclub" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
+                SkyClub
+              </a>
+            </div>
           </div>
           
           {/* User Section */}

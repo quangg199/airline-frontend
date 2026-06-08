@@ -1,40 +1,57 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, CheckCircle, AirplaneTilt, ArrowRight } from "@phosphor-icons/react";
+import { CreditCard, CheckCircle, AirplaneTilt, ArrowRight, DeviceMobile, QrCode } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import BackButton from "../components/BackButton";
 import Navbar from "../components/Navbar";
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [passenger, setPassenger] = useState({ name: "", cccd: "" });
+  
+  const searchParams = JSON.parse(localStorage.getItem("search_params")) || { passengers: { adults: 1, children: 0 } };
+  const totalPassengers = (searchParams.passengers?.adults || 1) + (searchParams.passengers?.children || 0);
+  
+  const [passengers, setPassengers] = useState(
+    Array.from({ length: totalPassengers }).map(() => ({ name: "", identity_number: "" }))
+  );
+  
   const [loading, setLoading] = useState(false);
-  const [flight, setFlight] = useState(null);
+  const [flights, setFlights] = useState([]);
   const [services, setServices] = useState([]);
+  const [selectedSeats, setSelectedSeats] = useState({ outbound: [], return: [] });
+  const [paymentMethod, setPaymentMethod] = useState("visa");
 
   useEffect(() => {
-    const savedFlight = JSON.parse(localStorage.getItem("selected_flight"));
+    const savedFlights = JSON.parse(localStorage.getItem("selected_flights")) || [];
     const savedServices = JSON.parse(localStorage.getItem("selected_services")) || [];
+    const savedSeats = JSON.parse(localStorage.getItem("selected_seats")) || {};
 
-    if (!savedFlight) {
+    if (savedFlights.length === 0) {
       alert("Không tìm thấy thông tin chuyến bay! Vui lòng chọn lại.");
       navigate("/flights");
       return;
     }
 
-    setFlight(savedFlight);
+    setFlights(savedFlights);
     setServices(savedServices);
+    setSelectedSeats(savedSeats);
   }, [navigate]);
 
-  if (!flight) return null;
+  if (flights.length === 0 || !selectedSeats) return null;
 
-  const basePrice = Number(flight.base_price);
+  // Tính tiền vé dựa vào giá của các ghế đã chọn
+  const outboundSeatPrice = selectedSeats.outbound?.reduce((sum, s) => sum + Number(s.price), 0) || 0;
+  const returnSeatPrice = selectedSeats.return?.reduce((sum, s) => sum + Number(s.price), 0) || 0;
+  
+  const basePrice = outboundSeatPrice + returnSeatPrice;
+  const taxAmount = basePrice * 0.80; // Thuế 80% giá vé cơ bản
   const servicesTotal = services.reduce((sum, s) => sum + Number(s.price), 0);
-  const totalAmount = basePrice + servicesTotal;
+  const totalAmount = basePrice + taxAmount + servicesTotal;
 
   const handleCheckout = async () => {
-    if (!passenger.name || !passenger.cccd) {
-      alert("Vui lòng nhập đầy đủ Họ tên và Số CCCD/Passport.");
+    const isAnyPassengerEmpty = passengers.some(p => !p.name || !p.identity_number);
+    if (isAnyPassengerEmpty) {
+      alert("Vui lòng nhập đầy đủ Họ tên và Số CCCD/Passport cho tất cả hành khách.");
       return;
     }
 
@@ -49,30 +66,83 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/bookings", {
+      // BƯỚC 1: TẠO BOOKING
+      if (!selectedSeats.outbound || selectedSeats.outbound.length !== totalPassengers) {
+        alert("Thông tin ghế chưa đầy đủ. Vui lòng chọn lại.");
+        setLoading(false);
+        return;
+      }
+
+      const flightId = flights[0].id;
+      const returnFlightId = flights.length > 1 ? flights[1].id : null;
+
+      const checkoutPayload = {
+        flight_id: flightId,
+        return_flight_id: returnFlightId,
+        service_ids: services.map(s => s.id),
+        passengers: passengers.map((p, index) => ({
+          name: p.name,
+          identity_number: p.identity_number,
+          outbound_seat_id: selectedSeats.outbound[index]?.id,
+          return_seat_id: selectedSeats.return?.[index]?.id || null
+        }))
+      };
+
+      const bookingRes = await fetch(`http://127.0.0.1:8000/api/bookings`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(checkoutPayload)
+      });
+
+      const bookingData = await bookingRes.json();
+
+      if (!bookingRes.ok || bookingData.status !== "success") {
+        alert("Lỗi đặt vé: " + (bookingData.message || "Đơn giữ chỗ có thể đã hết hạn (5 phút)."));
+        setLoading(false);
+        return;
+      }
+
+      // Lấy ID booking vừa tạo
+      let createdBookingIds = [];
+      let pnrCodes = [];
+      if (Array.isArray(bookingData.data)) {
+        createdBookingIds = bookingData.data.map(b => b.id);
+        pnrCodes = bookingData.data.map(b => b.pnr_code);
+      } else {
+        createdBookingIds = [bookingData.data.id];
+        pnrCodes = [bookingData.data.pnr_code];
+      }
+
+      // BƯỚC 2: THANH TOÁN MOCK API
+      const payRes = await fetch("http://127.0.0.1:8000/api/bookings/pay", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          flight_id: flight.id,
-          passenger_name: passenger.name,
-          identity_number: passenger.cccd,
-          service_ids: services.map(s => s.id)
+          booking_ids: createdBookingIds,
+          payment_method: paymentMethod
         })
       });
 
-      const data = await response.json();
+      const payData = await payRes.json();
 
-      if (response.ok && data.status === "success") {
-        alert("Thanh toán thành công! Mã đặt chỗ của bạn là: " + data.data.pnr_code);
-        localStorage.removeItem("selected_flight");
+      if (payRes.ok && payData.status === "success") {
+        alert(`Thanh toán thành công!\nMã đặt chỗ của bạn là: ${pnrCodes.join(', ')}`);
+        localStorage.removeItem("selected_flights");
         localStorage.removeItem("selected_services");
+        localStorage.removeItem("selected_seats");
         navigate("/my-bookings");
       } else {
-        alert("Lỗi đặt vé: " + (data.message || "Vui lòng thử lại."));
+        alert("Thanh toán thất bại: " + (payData.message || "Vui lòng thử lại."));
+        // Lỗi thanh toán -> Booking sẽ ở trạng thái pending và bị cron xoá sau 5 phút
+        navigate("/my-bookings");
       }
+
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
       alert("Không thể kết nối tới server.");
@@ -117,7 +187,7 @@ export default function Checkout() {
             Thanh toán
           </h1>
           <p className="text-zinc-500 font-medium max-w-2xl">
-            Hoàn tất thông tin hành khách và thanh toán để nhận mã đặt chỗ.
+            Hoàn tất thông tin hành khách và thanh toán để nhận mã đặt chỗ. Đơn đặt chỗ sẽ tự động bị hủy sau 5 phút nếu chưa được thanh toán.
           </p>
         </div>
 
@@ -132,29 +202,45 @@ export default function Checkout() {
                 <div className="w-8 h-8 bg-zinc-100 text-zinc-900 rounded-full flex items-center justify-center text-sm font-bold">1</div>
                 Thông tin hành khách
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Họ và Tên</label>
-                  <input 
-                    type="text" 
-                    placeholder="NGUYEN VAN A" 
-                    value={passenger.name}
-                    onChange={(e) => setPassenger({...passenger, name: e.target.value.toUpperCase()})}
-                    className="w-full bg-zinc-50 border border-zinc-200 p-4 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-semibold uppercase" 
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Số CCCD / Passport</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nhập số giấy tờ" 
-                    value={passenger.cccd}
-                    onChange={(e) => setPassenger({...passenger, cccd: e.target.value})}
-                    className="w-full bg-zinc-50 border border-zinc-200 p-4 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-semibold" 
-                    required
-                  />
-                </div>
+              
+              <div className="space-y-6">
+                {passengers.map((p, index) => (
+                  <div key={index} className="p-6 rounded-xl border border-zinc-100 bg-zinc-50/50">
+                    <h3 className="font-bold text-zinc-900 mb-4">Hành khách {index + 1}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Họ và Tên</label>
+                        <input 
+                          type="text" 
+                          placeholder="NGUYEN VAN A" 
+                          value={p.name}
+                          onChange={(e) => {
+                            const newPassengers = [...passengers];
+                            newPassengers[index].name = e.target.value.toUpperCase();
+                            setPassengers(newPassengers);
+                          }}
+                          className="w-full bg-white border border-zinc-200 p-4 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-semibold uppercase" 
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Số CCCD / Passport</label>
+                        <input 
+                          type="text" 
+                          placeholder="Nhập số giấy tờ" 
+                          value={p.identity_number}
+                          onChange={(e) => {
+                            const newPassengers = [...passengers];
+                            newPassengers[index].identity_number = e.target.value;
+                            setPassengers(newPassengers);
+                          }}
+                          className="w-full bg-white border border-zinc-200 p-4 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-semibold" 
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -164,22 +250,46 @@ export default function Checkout() {
                 <div className="w-8 h-8 bg-zinc-100 text-zinc-900 rounded-full flex items-center justify-center text-sm font-bold">2</div>
                 Phương thức thanh toán
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {["Thẻ Visa/Master", "Ví MoMo", "Chuyển khoản"].map((method, i) => (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[
+                  { id: 'visa', label: 'Thẻ Visa/Master', icon: CreditCard },
+                  { id: 'momo', label: 'Ví MoMo', icon: DeviceMobile }
+                ].map((method) => (
                   <div 
-                    key={i} 
+                    key={method.id} 
+                    onClick={() => setPaymentMethod(method.id)}
                     className={`p-6 border rounded-xl cursor-pointer transition-all flex flex-col items-center gap-3
-                      ${i === 0 ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-zinc-200 bg-white hover:border-zinc-300"}
+                      ${paymentMethod === method.id ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-zinc-200 bg-white hover:border-zinc-300"}
                     `}
                   >
-                     <CreditCard size={32} weight={i === 0 ? "fill" : "duotone"} className={i === 0 ? "text-blue-600" : "text-zinc-400"} />
-                     <span className={`text-sm font-semibold ${i === 0 ? "text-blue-700" : "text-zinc-600"}`}>
-                       {method}
+                     <method.icon size={32} weight={paymentMethod === method.id ? "fill" : "duotone"} className={paymentMethod === method.id ? "text-blue-600" : "text-zinc-400"} />
+                     <span className={`text-sm font-semibold ${paymentMethod === method.id ? "text-blue-700" : "text-zinc-600"}`}>
+                       {method.label}
                      </span>
                   </div>
                 ))}
               </div>
-              <p className="mt-6 text-sm text-zinc-400 font-medium">* Hệ thống đang chọn mặc định thẻ Visa/Master cho quá trình thử nghiệm.</p>
+              
+              {/* VÙNG NHẬP LIỆU MOCK THANH TOÁN */}
+              <div className="bg-zinc-50 border border-zinc-200 p-6 rounded-xl">
+                {paymentMethod === 'visa' && (
+                  <div className="space-y-4">
+                    <p className="text-sm font-bold text-zinc-700 mb-2">Nhập thông tin thẻ Visa/Master</p>
+                    <input type="text" placeholder="Số thẻ (VD: 4123 4567 8901 2345)" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input type="text" placeholder="MM/YY" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
+                      <input type="text" placeholder="CVV" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
+                    </div>
+                  </div>
+                )}
+                {paymentMethod === 'momo' && (
+                  <div className="space-y-4">
+                    <p className="text-sm font-bold text-pink-600 mb-2">Đăng nhập ví MoMo để thanh toán</p>
+                    <input type="text" placeholder="Số điện thoại MoMo" className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+                    <input type="password" placeholder="Mật khẩu MoMo (6 số)" className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+                  </div>
+                )}
+              </div>
             </section>
 
           </div>
@@ -191,18 +301,25 @@ export default function Checkout() {
                 Chi tiết chuyến bay
               </h3>
               
-              {/* Tóm tắt Flight */}
-              <div className="border-b border-zinc-100 pb-6 mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-3xl font-bold tracking-tighter text-zinc-900">{flight.departure_airport?.code}</span>
-                  <div className="flex flex-col items-center text-zinc-400 px-4">
-                    <AirplaneTilt size={24} weight="fill" />
+              {/* Tóm tắt Flights (Khứ hồi hoặc 1 chiều) */}
+              <div className="border-b border-zinc-100 pb-6 mb-6 space-y-6">
+                {flights.map((f, idx) => (
+                  <div key={idx}>
+                    <div className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-widest">
+                      CHUYẾN {idx === 0 ? "ĐI" : "VỀ"}
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-2xl font-bold tracking-tighter text-zinc-900">{f.departure_airport?.code}</span>
+                      <div className="flex flex-col items-center text-zinc-400 px-4">
+                        <AirplaneTilt size={20} weight="fill" className={idx === 1 ? "rotate-180 text-orange-500" : ""} />
+                      </div>
+                      <span className="text-2xl font-bold tracking-tighter text-zinc-900">{f.arrival_airport?.code}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-zinc-500">
+                      {f.flight_number} &bull; {formatTime(f.departure_time)}, {formatDate(f.departure_time)}
+                    </p>
                   </div>
-                  <span className="text-3xl font-bold tracking-tighter text-zinc-900">{flight.arrival_airport?.code}</span>
-                </div>
-                <p className="text-sm font-semibold text-zinc-500">
-                  {flight.flight_number} &bull; {formatTime(flight.departure_time)}, {formatDate(flight.departure_time)}
-                </p>
+                ))}
               </div>
 
               {/* Giá tiền */}
@@ -220,8 +337,8 @@ export default function Checkout() {
                 ))}
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-zinc-500">Thuế, phí</span>
-                  <span className="font-semibold text-green-600">Miễn phí</span>
+                  <span className="text-zinc-500">Thuế, phí hệ thống (80%)</span>
+                  <span className="font-semibold text-zinc-900">{formatCurrency(taxAmount)}</span>
                 </div>
               </div>
 

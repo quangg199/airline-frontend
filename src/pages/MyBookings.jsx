@@ -1,9 +1,44 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AirplaneTilt, Ticket, ArrowLeft, CircleNotch, CalendarBlank, UserCircle, CurrencyCircleDollar } from "@phosphor-icons/react";
+import { AirplaneTilt, Ticket, ArrowLeft, CircleNotch, CalendarBlank, UserCircle, CurrencyCircleDollar, Clock } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import BackButton from "../components/BackButton";
 import Navbar from "../components/Navbar";
+
+const CountdownTimer = ({ createdAt, onExpire }) => {
+  const [minutesLeft, setMinutesLeft] = useState(null);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      // Parse created_at (assumes it's either UTC with 'Z' or local, adjust if needed)
+      // Thêm 'Z' nếu chuỗi ngày tháng từ server không có múi giờ để đảm bảo đúng UTC
+      const dateStr = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
+      const createdTime = new Date(dateStr).getTime();
+      const now = new Date().getTime();
+      const diffMs = (createdTime + 5 * 60 * 1000) - now;
+      
+      if (diffMs <= 0) {
+        setMinutesLeft(0);
+        if (onExpire) onExpire();
+      } else {
+        setMinutesLeft(Math.ceil(diffMs / 60000));
+      }
+    };
+
+    calculateTime();
+    // Cập nhật mỗi 1 phút (60000ms) theo yêu cầu
+    const timer = setInterval(calculateTime, 60000);
+    return () => clearInterval(timer);
+  }, [createdAt, onExpire]);
+
+  if (minutesLeft === null || minutesLeft <= 0) return null;
+
+  return (
+    <span className="text-amber-600 font-bold ml-2 text-xs flex items-center gap-1 mt-1 animate-pulse">
+      <Clock size={14} /> Hủy sau {minutesLeft} phút
+    </span>
+  );
+};
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -136,8 +171,20 @@ export default function MyBookings() {
                   
                   {/* Status & ID */}
                   <div className="w-full lg:w-1/4 space-y-5">
-                    <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-widest ${getStatusStyle(booking.status)}`}>
-                      {getStatusText(booking.status)}
+                    <div>
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-widest ${getStatusStyle(booking.status)}`}>
+                        {getStatusText(booking.status)}
+                      </div>
+                      {booking.status === "pending" && (
+                        <CountdownTimer 
+                          createdAt={booking.created_at} 
+                          onExpire={() => {
+                            // Gọi lại hàm fetchBookings để load lại trạng thái thành cancelled
+                            // Dùng reload trang cho đơn giản hoặc update state
+                            window.location.reload();
+                          }} 
+                        />
+                      )}
                     </div>
                     <div>
                       <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -181,12 +228,21 @@ export default function MyBookings() {
                   {/* Summary */}
                   <div className="w-full lg:w-1/4 flex flex-col justify-center space-y-6 lg:pl-4">
                     <div>
-                      <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                        <UserCircle size={14} /> Hành khách
+                      <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <UserCircle size={14} /> {booking.tickets?.length || 0} Hành khách
                       </p>
-                      <p className="text-sm font-bold text-zinc-900 uppercase">
-                        {booking.tickets[0]?.passenger_name || "N/A"}
-                      </p>
+                      <div className="space-y-1">
+                        {booking.tickets?.map((t, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-zinc-900 uppercase truncate max-w-[120px]" title={t.passenger_name}>
+                              {t.passenger_name}
+                            </span>
+                            <span className="bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-bold">
+                              Ghế {t.seat?.seat_number || "N/A"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">

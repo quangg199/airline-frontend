@@ -22,17 +22,41 @@ export default function FlightResults() {
     times: [],
   });
 
+  const [searchParams, setSearchParams] = useState(null);
+  const [discountApplied, setDiscountApplied] = useState(null);
+  const [bookingStage, setBookingStage] = useState('outbound');
+  const [outboundFlight, setOutboundFlight] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchFlights();
+    // Đọc tiêu chí tìm kiếm từ localStorage (được lưu bởi HomePage)
+    const stored = localStorage.getItem("search_params");
+    const parsed = stored ? JSON.parse(stored) : null;
+    setSearchParams(parsed);
+    fetchFlights(parsed);
   }, []);
 
-  const fetchFlights = async () => {
+  const fetchFlights = async (params) => {
     setLoading(true);
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/flights");
+      // Xây dựng query string từ tiêu chí tìm kiếm
+      const queryParts = [];
+      if (params?.departure) queryParts.push(`from=${encodeURIComponent(params.departure)}`);
+      if (params?.arrival)   queryParts.push(`to=${encodeURIComponent(params.arrival)}`);
+      if (params?.date)      queryParts.push(`date=${encodeURIComponent(params.date)}`);
+
+      // Chuyển đổi tripType: FE dùng 'one-way'/'round-trip' (hyphen)
+      // → BE cần 'one_way'/'round_trip' (underscore)
+      if (params?.tripType) {
+        const backendTripType = params.tripType.replace('-', '_');
+        queryParts.push(`trip_type=${encodeURIComponent(backendTripType)}`);
+      }
+
+      const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+      const response = await axios.get(`http://127.0.0.1:8000/api/flights${queryString}`);
       setFlights(response.data.data || []);
+      setDiscountApplied(response.data.discount_applied || null);
       setError(null);
     } catch (err) {
       setError("Không thể tải danh sách chuyến bay. Vui lòng thử lại.");
@@ -50,8 +74,31 @@ export default function FlightResults() {
   };
 
   const handleSelectFlight = (flight) => {
-    localStorage.setItem('selected_flight', JSON.stringify(flight));
-    navigate('/services'); 
+    if (searchParams?.tripType === 'round-trip' && bookingStage === 'outbound') {
+      // Đã chọn xong chiều đi, chuyển sang chiều về
+      setOutboundFlight(flight);
+      setBookingStage('return');
+      
+      // Load chuyến về
+      const returnParams = {
+        ...searchParams,
+        departure: searchParams.arrival,
+        arrival: searchParams.departure,
+        date: searchParams.returnDate
+      };
+      setSearchParams(returnParams);
+      fetchFlights(returnParams);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Đã chọn xong chiều về (hoặc là vé một chiều)
+      if (searchParams?.tripType === 'round-trip') {
+        localStorage.setItem('selected_flights', JSON.stringify([outboundFlight, flight]));
+      } else {
+        localStorage.setItem('selected_flights', JSON.stringify([flight]));
+      }
+      localStorage.removeItem('selected_flight'); // dọn dẹp biến cũ
+      navigate('/seat-selection'); 
+    }
   };
 
   const getFilteredAndSortedFlights = () => {
@@ -71,7 +118,9 @@ export default function FlightResults() {
     // Sắp xếp
     result.sort((a, b) => {
       if (filters.sort === 'price_asc') {
-        return parseFloat(a.base_price) - parseFloat(b.base_price);
+        const priceA = parseFloat(a.display_price || a.base_price);
+        const priceB = parseFloat(b.display_price || b.base_price);
+        return priceA - priceB;
       }
       if (filters.sort === 'time_asc') {
         return new Date(a.departure_time) - new Date(b.departure_time);
@@ -104,7 +153,9 @@ export default function FlightResults() {
           <BackButton />
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-none mb-6 bg-gradient-to-r from-zinc-900 via-zinc-800 to-blue-900 bg-clip-text text-transparent">
-          Chuyến bay của bạn
+          {searchParams?.tripType === 'round-trip' 
+            ? (bookingStage === 'outbound' ? 'Chọn chuyến bay đi' : 'Chọn chuyến bay về')
+            : 'Chuyến bay của bạn'}
         </h1>
         <p className="text-base text-zinc-500 max-w-[65ch] leading-relaxed">
           Tìm kiếm và chọn lựa những chuyến bay tốt nhất. Giá vé hiển thị đã bao gồm thuế và phí dịch vụ.

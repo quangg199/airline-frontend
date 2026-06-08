@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
 import { AirplaneTakeoff, MapPinLine, CalendarBlank, ArrowsLeftRight, Users, PaperPlaneTilt, CaretLeft, CaretRight, ArrowRight, CheckCircle } from "@phosphor-icons/react";
 import Navbar from "../components/Navbar";
@@ -33,21 +34,20 @@ export default function HomePage() {
     passengers: { adults: 1, children: 0 }
   });
   const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
-  const [heroBg, setHeroBg] = useState("/hero-bg.png");
-
-  useEffect(() => {
+  const [heroBg] = useState(() => {
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 17) {
       // Day (6h - 17h)
-      setHeroBg("/hero-bg.png"); 
+      return "/hero-bg.png";
     } else if (hour >= 17 && hour < 19) {
       // Sunset (17h - 19h)
-      setHeroBg("https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&q=80");
+      return "https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&q=80";
     } else {
       // Night (19h - 5h)
-      setHeroBg("https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&q=80"); 
+      return "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&q=80";
     }
-  }, []);
+  });
+
 
   const handleUpdatePassengers = (type, change) => {
     setSearchData(prev => {

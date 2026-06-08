@@ -124,10 +124,19 @@ export default function SeatSelection() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
+
+      if (res.status === 401) {
+        alert("Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại!");
+        localStorage.removeItem("access_token");
+        sessionStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
 
       const data = await res.json();
       if (res.ok && data.status === "success") {

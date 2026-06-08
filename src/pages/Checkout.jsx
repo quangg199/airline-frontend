@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, CheckCircle, AirplaneTilt, ArrowRight, DeviceMobile, QrCode } from "@phosphor-icons/react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
 import BackButton from "../components/BackButton";
 import Navbar from "../components/Navbar";

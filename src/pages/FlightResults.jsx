@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AirplaneLanding, MagnifyingGlass } from "@phosphor-icons/react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
 import FlightCard from "../components/flight/FlightCard";
 import FlightFilterSidebar from "../components/flight/FlightFilterSidebar";
@@ -23,6 +24,7 @@ export default function FlightResults() {
   });
 
   const [searchParams, setSearchParams] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [discountApplied, setDiscountApplied] = useState(null);
   const [bookingStage, setBookingStage] = useState('outbound');
   const [outboundFlight, setOutboundFlight] = useState(null);
@@ -58,7 +60,7 @@ export default function FlightResults() {
       setFlights(response.data.data || []);
       setDiscountApplied(response.data.discount_applied || null);
       setError(null);
-    } catch (err) {
+    } catch {
       setError("Không thể tải danh sách chuyến bay. Vui lòng thử lại.");
     } finally {
       setLoading(false);

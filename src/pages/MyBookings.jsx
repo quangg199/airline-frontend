@@ -118,38 +118,13 @@ const STATUS_TEXT = {
   cancelled: "✕ Đã hủy",
 };
 
-// ─── CountdownTimer ───────────────────────────────────────────────────────────
-
-function CountdownTimer({ createdAt, onExpire }) {
-  const [secondsLeft, setSecondsLeft] = useState(null);
-
-  useEffect(() => {
-    const calc = () => {
-      const dateStr = createdAt.endsWith("Z") ? createdAt : createdAt + "Z";
-      const diff = new Date(dateStr).getTime() + 5 * 60 * 1000 - Date.now();
-      if (diff <= 0) { setSecondsLeft(0); onExpire?.(); }
-      else setSecondsLeft(Math.ceil(diff / 1000));
-    };
-    calc();
-    const t = setInterval(calc, 1000);
-    return () => clearInterval(t);
-  }, [createdAt, onExpire]);
-
-  if (!secondsLeft || secondsLeft <= 0) return null;
-  const m = Math.floor(secondsLeft / 60);
-  const s = secondsLeft % 60;
-
-  return (
-    <span className="inline-flex items-center gap-1 text-amber-600 font-bold text-xs animate-pulse mt-1">
-      <Clock size={13} /> Hủy sau {m}:{String(s).padStart(2, "0")}
-    </span>
-  );
-}
+import CountdownTimer from "../components/CountdownTimer";
 
 // ─── BookingCard ──────────────────────────────────────────────────────────────
 
 function BookingCard({ booking, idx }) {
   const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
   const flight = booking.flight;
   const airline = getAirline(flight?.flight_number ?? "");
   const status = booking.status;
@@ -191,9 +166,9 @@ function BookingCard({ booking, idx }) {
             <span className={`inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${STATUS_STYLE[status] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
               {STATUS_TEXT[status] ?? status}
             </span>
-            {status === "pending" && (
+            {status === "pending" && booking.expires_at && (
               <CountdownTimer
-                createdAt={booking.created_at}
+                expiresAt={booking.expires_at}
                 onExpire={() => window.location.reload()}
               />
             )}
@@ -356,7 +331,7 @@ function BookingCard({ booking, idx }) {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => {/* navigate to payment */}}
+            onClick={() => navigate(`/payment-retry/${booking.id}`, { state: { booking } })}
             className={`mt-4 w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r ${airline.accent} shadow-md cursor-pointer`}
           >
             Thanh toán ngay

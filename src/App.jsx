@@ -10,6 +10,7 @@ import Support from './pages/Support';
 import Checkout from './pages/Checkout';
 import MyBookings from './pages/MyBookings';
 import SkyClub from './pages/SkyClub';
+import PaymentRetry from './pages/PaymentRetry';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
   <Route path="/checkout" element={<Checkout />} />
   <Route path="/my-bookings" element={<MyBookings />} />
   <Route path="/skyclub" element={<SkyClub />} />
+  <Route path="/payment-retry/:bookingId" element={<PaymentRetry />} />
 </Routes>
     </BrowserRouter>
   );

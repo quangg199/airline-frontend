@@ -11,6 +11,14 @@ import Checkout from './pages/Checkout';
 import MyBookings from './pages/MyBookings';
 import SkyClub from './pages/SkyClub';
 
+import AdminLayout from "./layouts/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import Flights from "./pages/admin/Flights";
+import Airports from "./pages/admin/Airports";
+import Users from "./pages/admin/Users";
+import Bookings from "./pages/admin/Bookings";
+import Profile from "./pages/admin/Profile";
+
 function App() {
   return (
     <BrowserRouter>
@@ -28,6 +36,17 @@ function App() {
   <Route path="/checkout" element={<Checkout />} />
   <Route path="/my-bookings" element={<MyBookings />} />
   <Route path="/skyclub" element={<SkyClub />} />
+
+  <Route path="/" element={<HomePage />} />
+
+  <Route path="/admin" element={<AdminLayout />}>
+    <Route index element={<Dashboard />} />
+    <Route path="flights" element={<Flights />} />
+    <Route path="users" element={<Users />} />
+    <Route path="bookings" element={<Bookings />} />
+    <Route path="airports" element={<Airports />} />
+    <Route path="profile" element={<Profile />} />
+  </Route>
 </Routes>
     </BrowserRouter>
   );

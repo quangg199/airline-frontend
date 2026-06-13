@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { CreditCard, DeviceMobile, QrCode, CheckCircle, AirplaneTilt } from "@phosphor-icons/react";
 import { motion } from "motion/react";
@@ -9,18 +9,26 @@ import CountdownTimer from "../components/CountdownTimer";
 export default function PaymentRetry() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bookingId } = useParams();
-  
-  const booking = location.state?.booking;
+  const { bookingId: routeBookingId } = useParams();
+
+  const reschedulePaymentData = JSON.parse(localStorage.getItem("reschedule_payment_data") || "null");
+  const bookingId = location.state?.bookingId || routeBookingId || reschedulePaymentData?.bookingId;
+  const amount = location.state?.amount || reschedulePaymentData?.amount;
+  const booking = location.state?.booking || null;
+  const paymentType = location.state?.type || reschedulePaymentData?.type || "payment";
 
   const [paymentMethod, setPaymentMethod] = useState("vnpay");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
-  // Nếu người dùng gõ trực tiếp URL mà không có state booking thì đẩy về my-bookings
-  if (!booking) {
-    navigate("/my-bookings");
-    return null;
-  }
+  useEffect(() => {
+    if (!booking && !bookingId) {
+      setRedirecting(true);
+      navigate("/my-bookings");
+    }
+  }, [booking, bookingId, navigate]);
+
+  if (redirecting) return null;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
@@ -85,8 +93,12 @@ export default function PaymentRetry() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Thanh toán vé đang chờ</h1>
-              <p className="text-zinc-500 font-medium mt-1">Mã đặt chỗ (PNR): <span className="font-bold text-zinc-900">{booking.pnr_code}</span></p>
-              {booking.expires_at && (
+              {booking ? (
+                <p className="text-zinc-500 font-medium mt-1">Mã đặt chỗ (PNR): <span className="font-bold text-zinc-900">{booking.pnr_code}</span></p>
+              ) : (
+                <p className="text-zinc-500 font-medium mt-1">Thanh toán đổi chuyến</p>
+              )}
+              {booking?.expires_at && (
                 <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg inline-block">
                   <CountdownTimer 
                     expiresAt={booking.expires_at} 
@@ -100,7 +112,7 @@ export default function PaymentRetry() {
             </div>
             <div className="text-right">
               <span className="text-sm text-zinc-500 block mb-1">Tổng tiền cần thanh toán</span>
-              <span className="text-3xl font-black text-emerald-600">{formatCurrency(booking.total_amount)}</span>
+              <span className="text-3xl font-black text-emerald-600">{formatCurrency(amount || booking?.total_amount || 0)}</span>
             </div>
           </div>
 

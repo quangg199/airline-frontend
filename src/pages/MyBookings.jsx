@@ -337,6 +337,51 @@ function BookingCard({ booking, idx }) {
             Thanh toán ngay
           </motion.button>
         )}
+
+        {/* ── Self-service: Reschedule / Cancel (only if flight hasn't departed) ── */}
+        {new Date() < new Date(flight?.departure_time) && status !== "cancelled" && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                // Navigate to search page with booking state for rescheduling flow
+                navigate('/search', { state: { rescheduleBooking: booking } });
+              }}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-yellow-500 to-amber-500 shadow-md cursor-pointer"
+            >
+              Đổi chuyến bay
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={async () => {
+                if (!confirm('Bạn có chắc muốn hủy vé này?')) return;
+                try {
+                  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+                  const res = await fetch(`http://127.0.0.1:8000/api/bookings/${booking.id}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (res.ok && data.status === 'success') {
+                    alert(data.message || 'Hủy vé thành công');
+                    window.location.reload();
+                  } else {
+                    alert(data.message || 'Không thể hủy vé: ' + (data.errors ? JSON.stringify(data.errors) : ''));
+                  }
+                } catch (err) {
+                  console.error(err);
+                  alert('Lỗi khi kết nối tới máy chủ.');
+                }
+              }}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-red-500 to-rose-500 shadow-md cursor-pointer"
+            >
+              Hủy vé
+            </motion.button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

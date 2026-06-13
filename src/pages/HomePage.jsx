@@ -34,6 +34,7 @@ export default function HomePage() {
     passengers: { adults: 1, children: 0 }
   });
   const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
   const [heroBg] = useState(() => {
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 17) {
@@ -335,6 +336,7 @@ export default function HomePage() {
                   onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
                   className="w-full h-14 bg-zinc-50 border border-zinc-200 text-zinc-900 text-base font-semibold px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 transition-all placeholder:text-zinc-400"
                   value={searchData.date}
+                  min={today}
                   onChange={(e) => setSearchData({...searchData, date: e.target.value})}
                 />
               </div>
@@ -351,6 +353,7 @@ export default function HomePage() {
                     onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
                     className="w-full h-14 bg-zinc-50 border border-zinc-200 text-zinc-900 text-base font-semibold px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 transition-all placeholder:text-zinc-400"
                     value={searchData.returnDate}
+                    min={searchData.date || today}
                     onChange={(e) => setSearchData({...searchData, returnDate: e.target.value})}
                   />
                 </div>

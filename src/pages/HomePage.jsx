@@ -73,14 +73,10 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-  axios
-    .get("http://127.0.0.1:8000/api/airports")
-    .then((res) => {
-      console.log("Airports:", res.data);
-      setAirports(res.data);
-    })
-    .catch(console.error);
-}, []);
+    axios.get("http://127.0.0.1:8000/api/airports")
+      .then(res => setAirports(res.data.data || []))
+      .catch(console.error);
+  }, []);
 
   const handleSearch = () => {
     if (!searchData.departure || !searchData.arrival) {

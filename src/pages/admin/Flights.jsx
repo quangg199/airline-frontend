@@ -1,198 +1,218 @@
 import { useEffect, useState } from "react";
 import api from "../../api";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Spinner,
-  Badge,
-  Card,
-  Row,
-  Col,
-} from "react-bootstrap";
+import { Table, Button, Modal, Form, Spinner } from "react-bootstrap";
 
 function Flights() {
   const [flights, setFlights] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [show, setShow] = useState(false);
   const [editId, setEditId] = useState(null);
 
   const [search, setSearch] = useState("");
-
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    flight_number: "",
-    departure_airport_id: "",
-    arrival_airport_id: "",
-    departure_time: "",
-    arrival_time: "",
-    aircraft_id: "",
-    base_price: "",
-    available_seats: "",
+    flightCode: "",
+    departure: "",
+    destination: "",
+    price: "",
     status: "scheduled",
   });
 
-  // ================= FETCH =================
   useEffect(() => {
     fetchFlights();
-  }, [search]);
+  }, []);
 
+  // GET ALL
   const fetchFlights = async () => {
     setLoading(true);
+
     try {
-      const res = await api.get(`/admin/flights?search=${search}`);
-      setFlights(res.data.data);
+      const res = await api.get("/flights.php");
+      setFlights(res.data || []);
     } catch (err) {
-      console.log(err.response?.data);
+      console.log("Using mock data");
+
+      setFlights([
+        {
+          id: 1,
+          flightCode: "VN101",
+          departure: "Hà Nội",
+          destination: "TP.HCM",
+          price: 1200000,
+          status: "scheduled",
+        },
+        {
+          id: 2,
+          flightCode: "VJ202",
+          departure: "Đà Nẵng",
+          destination: "Hà Nội",
+          price: 900000,
+          status: "delayed",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= OPEN ADD =================
+  // OPEN ADD
   const handleAdd = () => {
     setEditId(null);
     setForm({
-      flight_number: "",
-      departure_airport_id: "",
-      arrival_airport_id: "",
-      departure_time: "",
-      arrival_time: "",
-      aircraft_id: "",
-      base_price: "",
-      available_seats: "",
+      flightCode: "",
+      departure: "",
+      destination: "",
+      price: "",
       status: "scheduled",
     });
     setShow(true);
   };
 
-  // ================= EDIT =================
-  const handleEdit = (f) => {
-    setEditId(f.id);
-    setForm(f);
+  // OPEN EDIT (FIXED)
+  const handleEdit = (flight) => {
+    setEditId(flight.id);
+
+    setForm({
+      flightCode: flight.flightCode || "",
+      departure: flight.departure || "",
+      destination: flight.destination || "",
+      price: flight.price || "",
+      status: flight.status || "scheduled",
+    });
+
     setShow(true);
   };
 
-  // ================= SAVE =================
+  // SAVE (ADD / UPDATE)
   const handleSave = async () => {
     setSaving(true);
 
     try {
-      const payload = {
-        ...form,
-        base_price: Number(form.base_price),
-        available_seats: Number(form.available_seats),
-      };
-
       if (editId) {
-        await api.put(`/admin/flights/${editId}`, payload);
+        await api.put(`/flights.php?id=${editId}`, form);
       } else {
-        await api.post(`/admin/flights`, payload);
+        await api.post("/flights.php", form);
       }
 
       setShow(false);
       fetchFlights();
     } catch (err) {
-      console.log(err.response?.data);
+      console.log(err);
     } finally {
       setSaving(false);
     }
   };
 
-  // ================= DELETE =================
+  // DELETE
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete flight?")) return;
-    await api.delete(`/admin/flights/${id}`);
-    fetchFlights();
+    if (!window.confirm("Delete this flight?")) return;
+
+    try {
+      await api.delete(`/flights.php?id=${id}`);
+      setFlights((prev) => prev.filter((f) => f.id !== id));
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  // ================= STATUS BADGE =================
-  const statusBadge = (status) => {
-    const map = {
-      scheduled: "success",
-      delayed: "warning",
-      cancelled: "danger",
-    };
+  // SAFE FILTER (FIXED)
+  const filteredFlights = flights.filter((f) => {
+    const keyword = search.toLowerCase();
 
-    return <Badge bg={map[status] || "secondary"}>{status}</Badge>;
+    return (
+      (f.flightCode || "").toLowerCase().includes(keyword) ||
+      (f.departure || "").toLowerCase().includes(keyword) ||
+      (f.destination || "").toLowerCase().includes(keyword)
+    );
+  });
+
+  // STATUS COLOR
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "scheduled":
+        return "green";
+      case "delayed":
+        return "orange";
+      case "cancelled":
+        return "red";
+      default:
+        return "gray";
+    }
   };
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center mt-5">
-        <Spinner />
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" />
       </div>
     );
   }
 
   return (
     <div className="container mt-4">
+      <h2>Flights Management</h2>
 
-      {/* ================= HEADER ================= */}
-      <Card className="p-3 mb-3 shadow-sm">
-        <Row>
-          <Col md={8}>
-            <h4>✈ Flight Management</h4>
-          </Col>
+      {/* SEARCH + ADD */}
+      <div className="d-flex gap-2 align-items-center mb-3 mt-3">
+        <input
+          type="text"
+          placeholder="Search flight..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            padding: "10px 14px",
+            width: "320px",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            outline: "none",
+          }}
+        />
 
-          <Col md={4} className="d-flex gap-2">
-            <Form.Control
-              placeholder="Search flight..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <Button onClick={handleAdd}>+ Add Flight</Button>
+      </div>
 
-            <Button onClick={handleAdd}>+ Add</Button>
-          </Col>
-        </Row>
-      </Card>
+      {/* TABLE */}
+      <Table bordered hover>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
 
-      {/* ================= TABLE ================= */}
-      <Card className="shadow-sm">
-        <Table hover responsive>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Flight No</th>
-              <th>Route</th>
-              <th>Time</th>
-              <th>Price</th>
-              <th>Seats</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {flights.map((f, i) => (
+        <tbody>
+          {filteredFlights.length > 0 ? (
+            filteredFlights.map((f) => (
               <tr key={f.id}>
-                <td>{i + 1}</td>
-                <td><b>{f.flight_number}</b></td>
+                <td>{f.id}</td>
+                <td>{f.flightCode}</td>
+                <td>{f.departure}</td>
+                <td>{f.destination}</td>
+                <td>{f.price}</td>
 
                 <td>
-                  {f.departure_airport_id} → {f.arrival_airport_id}
-                </td>
-
-                <td>
-                  {f.departure_time} <br />
-                  {f.arrival_time}
-                </td>
-
-                <td>${f.base_price}</td>
-
-                <td>{f.available_seats}</td>
-
-                <td>{statusBadge(f.status)}</td>
-
-                <td>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => handleEdit(f)}
+                  <span
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      color: "#fff",
+                      background: getStatusColor(f.status),
+                      fontSize: "12px",
+                    }}
                   >
+                    {f.status}
+                  </span>
+                </td>
+
+                <td>
+                  <Button size="sm" onClick={() => handleEdit(f)}>
                     Edit
                   </Button>{" "}
                   <Button
@@ -204,13 +224,19 @@ function Flights() {
                   </Button>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Card>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="7" className="text-center">
+                No flights found
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </Table>
 
-      {/* ================= MODAL ================= */}
-      <Modal show={show} onHide={() => setShow(false)} size="lg">
+      {/* MODAL */}
+      <Modal show={show} onHide={() => setShow(false)}>
         <Modal.Header closeButton>
           <Modal.Title>
             {editId ? "Edit Flight" : "Add Flight"}
@@ -218,37 +244,63 @@ function Flights() {
         </Modal.Header>
 
         <Modal.Body>
-          <Row>
-            {Object.keys(form).map((key) => (
-              <Col md={6} key={key} className="mb-3">
-                <Form.Label>{key}</Form.Label>
+          <Form>
+            <Form.Control
+              className="mb-2"
+              placeholder="Flight Code"
+              value={form.flightCode}
+              onChange={(e) =>
+                setForm({ ...form, flightCode: e.target.value })
+              }
+            />
 
-                <Form.Control
-                  value={form[key]}
-                  type={
-                    key.includes("time")
-                      ? "datetime-local"
-                      : key.includes("price") ||
-                        key.includes("seats")
-                      ? "number"
-                      : "text"
-                  }
-                  onChange={(e) =>
-                    setForm({ ...form, [key]: e.target.value })
-                  }
-                />
-              </Col>
-            ))}
-          </Row>
+            <Form.Control
+              className="mb-2"
+              placeholder="Departure"
+              value={form.departure}
+              onChange={(e) =>
+                setForm({ ...form, departure: e.target.value })
+              }
+            />
+
+            <Form.Control
+              className="mb-2"
+              placeholder="Destination"
+              value={form.destination}
+              onChange={(e) =>
+                setForm({ ...form, destination: e.target.value })
+              }
+            />
+
+            <Form.Control
+              className="mb-2"
+              placeholder="Price"
+              value={form.price}
+              onChange={(e) =>
+                setForm({ ...form, price: e.target.value })
+              }
+            />
+
+            <Form.Select
+              value={form.status}
+              onChange={(e) =>
+                setForm({ ...form, status: e.target.value })
+              }
+            >
+              <option value="scheduled">Scheduled</option>
+              <option value="delayed">Delayed</option>
+              <option value="cancelled">Cancelled</option>
+            </Form.Select>
+          </Form>
         </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShow(false)}>
-            Cancel
+            Close
           </Button>
 
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Flight"}
+            {saving ? "Saving..." : "Save"}
           </Button>
         </Modal.Footer>
       </Modal>

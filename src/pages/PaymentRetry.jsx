@@ -16,6 +16,7 @@ export default function PaymentRetry() {
   const amount = location.state?.amount || reschedulePaymentData?.amount;
   const booking = location.state?.booking || null;
   const paymentType = location.state?.type || reschedulePaymentData?.type || "payment";
+  const newFlightId = location.state?.newFlightId || reschedulePaymentData?.newFlightId;
 
   const [paymentMethod, setPaymentMethod] = useState("vnpay");
   const [loading, setLoading] = useState(false);
@@ -45,23 +46,39 @@ export default function PaymentRetry() {
     setLoading(true);
 
     try {
-      const payRes = await fetch("http://127.0.0.1:8000/api/bookings/pay", {
+      let apiUrl = "http://127.0.0.1:8000/api/bookings/pay";
+      let requestBody = {
+        booking_ids: [parseInt(bookingId)],
+        payment_method: paymentMethod
+      };
+
+      if (paymentType === 'reschedule') {
+        apiUrl = `http://127.0.0.1:8000/api/bookings/${bookingId}/pay-reschedule`;
+        requestBody = {
+          new_flight_id: newFlightId,
+          payment_method: paymentMethod
+        };
+      }
+
+      const payRes = await fetch(apiUrl, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          booking_ids: [parseInt(bookingId)],
-          payment_method: paymentMethod
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const payData = await payRes.json();
 
       if (payRes.ok && payData.status === "success") {
-        alert(`Thanh toán thành công cho mã đặt chỗ: ${booking.pnr_code}`);
+        if (paymentType === 'reschedule') {
+           localStorage.removeItem('reschedule_payment_data');
+           alert(`Thanh toán và đổi chuyến bay thành công!`);
+        } else {
+           alert(`Thanh toán thành công cho mã đặt chỗ: ${booking?.pnr_code || bookingId}`);
+        }
         navigate("/my-bookings");
       } else {
         alert("Thanh toán thất bại: " + (payData.message || "Vui lòng thử lại."));

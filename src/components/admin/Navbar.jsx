@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { FaBell, FaChevronDown, FaUserCircle } from "react-icons/fa";
 import { colors } from "../../styles/theme";
 
 function Navbar() {
@@ -14,68 +15,162 @@ function Navbar() {
   return (
     <nav
       style={{
-        height: "60px",
-        background: colors.white,
-        borderBottom: "1px solid #eee",
+        height: "70px",
+        background: "#fff",
+        borderBottom: "1px solid #E5E7EB",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        padding: "0 24px",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
       }}
     >
-      {/* BRAND */}
+      {/* LEFT */}
       <div
         onClick={() => navigate("/admin")}
         style={{
-          fontSize: "18px",
-          fontWeight: "700",
-          color: colors.dark,
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
           cursor: "pointer",
         }}
       >
-        SkyLink Admin
-      </div>
-
-      {/* USER AREA */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-
-        {/* AVATAR → PROFILE */}
         <div
-          onClick={() => navigate("/admin/profile")}
           style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
+            width: "42px",
+            height: "42px",
+            borderRadius: "12px",
             background: colors.primary,
-            color: colors.white,
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            fontWeight: "bold",
-            cursor: "pointer",
+            alignItems: "center",
+            color: "#fff",
+            fontWeight: "700",
           }}
-          title="My Profile"
         >
-          {(user?.name?.charAt(0) || "A").toUpperCase()}
+          ✈
         </div>
 
-        {/* NAME */}
-        <span style={{ fontSize: "14px", color: colors.gray }}>
-          {user?.name || "Admin"}
-        </span>
+        <div>
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#111827",
+            }}
+          >
+            SkyLink Admin
+          </div>
 
-        {/* LOGOUT */}
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#6B7280",
+            }}
+          >
+            Airline Management System
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+        }}
+      >
+        {/* Notification */}
+        <div
+          style={{
+            position: "relative",
+            cursor: "pointer",
+          }}
+        >
+          <FaBell size={20} color="#6B7280" />
+
+          <span
+            style={{
+              position: "absolute",
+              top: "-6px",
+              right: "-6px",
+              width: "16px",
+              height: "16px",
+              borderRadius: "50%",
+              background: "#EF4444",
+              color: "#fff",
+              fontSize: "10px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            3
+          </span>
+        </div>
+
+        {/* User */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            cursor: "pointer",
+          }}
+          onClick={() => navigate("/admin/profile")}
+        >
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              background: colors.primary,
+              color: "#fff",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontWeight: "700",
+              fontSize: "16px",
+            }}
+          >
+            {(user?.name?.charAt(0) || "A").toUpperCase()}
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontWeight: "600",
+                color: "#111827",
+              }}
+            >
+              {user?.name || "Admin"}
+            </div>
+
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#6B7280",
+              }}
+            >
+              Administrator
+            </div>
+          </div>
+
+          <FaChevronDown color="#6B7280" />
+        </div>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
           style={{
-            padding: "6px 12px",
             border: "none",
-            background: colors.danger,
-            color: colors.white,
-            borderRadius: "6px",
+            background: "#EF4444",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: "10px",
             cursor: "pointer",
-            fontSize: "13px",
+            fontWeight: "600",
           }}
         >
           Logout

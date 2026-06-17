@@ -15,42 +15,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: loginEmail,
-        password: loginPassword
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.status === "success") {
-      const storage = rememberMe ? localStorage : sessionStorage;
-
-      // 🔥 FIX KEY THỐNG NHẤT
-      storage.setItem("token", data.access_token);
-
-      storage.setItem("user", JSON.stringify(data.user));
-
-      setSuccess(`Chào mừng ${data.user.name}`);
-
-      setTimeout(() => navigate("/"), 1500);
-    } else {
-      setError(data.message || "Login failed");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem("access_token", data.access_token);
+        storage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user)); // luon luu user de dung o Home
+        setSuccess(`Chào mừng trở lại, ${data.user.name}. Đang chuyển hướng...`);
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        setError(data.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
+    } catch {
+      setError("Không thể kết nối tới máy chủ.");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError("Server error");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <motion.div 

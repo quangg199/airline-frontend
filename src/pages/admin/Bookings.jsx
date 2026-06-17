@@ -11,39 +11,80 @@ function Bookings() {
     fetchBookings();
   }, []);
 
+  // GET ALL
   const fetchBookings = async () => {
     setLoading(true);
 
     try {
-      const res = await api.get("/admin/bookings");
+      const response = await api.get("/bookings.php");
+      setBookings(response.data || []);
+    } catch (error) {
+      console.log("API chưa có → dùng mock data");
 
-      console.log("API RAW:", res.data);
-
-      setBookings(res.data.data ?? []);
-    } catch (err) {
-      console.log(err);
-      setBookings([]);
+      setBookings([
+        {
+          id: 1,
+          customerName: "Nguyen Van A",
+          flightCode: "VN123",
+          status: "confirmed",
+        },
+        {
+          id: 2,
+          customerName: "Tran Thi B",
+          flightCode: "VJ456",
+          status: "pending",
+        },
+        {
+          id: 3,
+          customerName: "Le Van C",
+          flightCode: "QH789",
+          status: "cancelled",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
+  // DELETE (mock + ready API)
   const deleteBooking = async (id) => {
-    if (!window.confirm("Delete this booking?")) return;
+    const confirmDelete = window.confirm("Delete this booking?");
+    if (!confirmDelete) return;
 
-    await api.delete(`/admin/bookings/${id}`);
+    try {
+      await api.delete(`/bookings.php?id=${id}`);
 
-    setBookings((prev) => prev.filter((b) => b.id !== id));
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    } catch (error) {
+      console.log("Delete failed (mock mode)");
+
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    }
   };
 
+  // SAFE FILTER
   const filteredBookings = bookings.filter((b) => {
     const keyword = search.toLowerCase();
 
     return (
-      (b.user?.name || "").toLowerCase().includes(keyword) ||
-      (b.flight?.flight_number || "").toLowerCase().includes(keyword)
+      (b.customerName || "").toLowerCase().includes(keyword) ||
+      (b.flightCode || "").toLowerCase().includes(keyword)
     );
   });
+
+  // STATUS COLOR
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return "green";
+      case "pending":
+        return "orange";
+      case "cancelled":
+        return "red";
+      default:
+        return "gray";
+    }
+  };
 
   if (loading) {
     return (
@@ -55,17 +96,20 @@ function Bookings() {
 
   return (
     <div className="container mt-4">
-      <h2>Bookings Management</h2>
+      <h2 className="mb-3">Bookings Management</h2>
 
+      {/* SEARCH */}
       <Form className="mb-3">
         <Form.Control
-          placeholder="Search..."
+          type="text"
+          placeholder="Search customer or flight code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </Form>
 
-      <Table bordered hover>
+      {/* TABLE */}
+      <Table striped bordered hover responsive>
         <thead>
           <tr>
             <th>ID</th>
@@ -81,13 +125,27 @@ function Bookings() {
             filteredBookings.map((b) => (
               <tr key={b.id}>
                 <td>{b.id}</td>
-                <td>{b.user?.name || "N/A"}</td>
-                <td>{b.flight?.flight_number || "N/A"}</td>
-                <td>{b.status}</td>
+                <td>{b.customerName}</td>
+                <td>{b.flightCode}</td>
+
+                <td>
+                  <span
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "8px",
+                      color: "white",
+                      background: getStatusColor(b.status),
+                      fontSize: "12px",
+                    }}
+                  >
+                    {b.status}
+                  </span>
+                </td>
+
                 <td>
                   <Button
-                    size="sm"
                     variant="danger"
+                    size="sm"
                     onClick={() => deleteBooking(b.id)}
                   >
                     Delete

@@ -10,6 +10,7 @@ import Support from './pages/Support';
 import Checkout from './pages/Checkout';
 import MyBookings from './pages/MyBookings';
 import SkyClub from './pages/SkyClub';
+import PaymentRetry from './pages/PaymentRetry';
 
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -29,13 +30,16 @@ function App() {
   <Route path="/login" element={<LoginPage />} />
   <Route path="/register" element={<RegisterPage />} />
   <Route path="/flights" element={<FlightResults />} />
+  <Route path="/search" element={<FlightResults />} />
   <Route path="/seat-selection" element={<SeatSelection />} />
   <Route path="/services" element={<ServiceSelection />} />
   <Route path="/promotions" element={<Promotions />} />
   <Route path="/support" element={<Support />} />
   <Route path="/checkout" element={<Checkout />} />
+  <Route path="/payment" element={<PaymentRetry />} />
   <Route path="/my-bookings" element={<MyBookings />} />
   <Route path="/skyclub" element={<SkyClub />} />
+  <Route path="/payment-retry/:bookingId" element={<PaymentRetry />} />
 
   <Route path="/" element={<HomePage />} />
 

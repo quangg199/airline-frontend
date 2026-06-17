@@ -167,40 +167,38 @@ export default function FlightResults() {
     try {
       const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
-      // Gọi endpoint confirm reschedule và để backend tự động gán ghế
-      const res = await axios.put(
-        `http://127.0.0.1:8000/api/bookings/${rescheduleData.oldBooking.id}/confirm-reschedule`,
-        { 
-          new_flight_id: rescheduleData.newFlight.id,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Tính toán số tiền cần thanh toán (backend đã trả về chính xác số tiền ở trường reschedule_fee)
+      const paymentAmount = rescheduleData.reschedule_fee;
 
-      if (res.data.status === 'success') {
-        // Tính toán số tiền cần thanh toán
-        const oldFlightPrice = rescheduleData.original_amount;
-        const newFlightBasePrice = parseFloat(rescheduleData.newFlight.display_price || rescheduleData.newFlight.base_price);
-        const ticketsCount = rescheduleData.oldBooking.tickets?.length || 1;
-        const newFlightTotalPrice = newFlightBasePrice * ticketsCount * 1.8;
-        const paymentAmount = newFlightTotalPrice - oldFlightPrice + rescheduleData.reschedule_fee;
-
-        if (paymentAmount > 0) {
-          // Cần thanh toán thêm
-          localStorage.setItem('reschedule_payment_data', JSON.stringify({
-            bookingId: rescheduleData.oldBooking.id,
+      if (paymentAmount > 0) {
+        // Cần thanh toán thêm
+        localStorage.setItem('reschedule_payment_data', JSON.stringify({
+          bookingId: rescheduleData.oldBooking.id,
+          newFlightId: rescheduleData.newFlight.id,
+          amount: paymentAmount,
+          type: 'reschedule'
+        }));
+        navigate('/payment', { 
+          state: { 
             amount: paymentAmount,
+            bookingId: rescheduleData.oldBooking.id,
+            newFlightId: rescheduleData.newFlight.id,
             type: 'reschedule'
-          }));
-          navigate('/payment', { 
-            state: { 
-              amount: paymentAmount,
-              bookingId: rescheduleData.oldBooking.id,
-              type: 'reschedule'
-            } 
-          });
-        } else {
-          // Hoàn tiền
-          alert(`Đổi chuyến bay thành công! Hệ thống sẽ hoàn ${Math.abs(paymentAmount).toLocaleString('vi-VN')} VND vào ví SkyLink của bạn.`);
+          } 
+        });
+      } else {
+        // Hoàn tiền hoặc không mất phí, gọi thẳng API thanh toán để nó tự xác nhận đổi vé
+        const res = await axios.post(
+          `http://127.0.0.1:8000/api/bookings/${rescheduleData.oldBooking.id}/pay-reschedule`,
+          { 
+            new_flight_id: rescheduleData.newFlight.id,
+            payment_method: 'vnpay' // Mặc định vì số tiền = 0
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (res.data.status === 'success') {
+          alert(`Đổi chuyến bay thành công!`);
           navigate('/my-bookings');
         }
       }

@@ -25,6 +25,7 @@ import {
 
 const NAV_LINKS = [
   { label: "Chuyến bay", href: "/flights" },
+  { label: "Check-in", href: "/check-in" },
   {
     label: "Dịch vụ",
     href: "/services",

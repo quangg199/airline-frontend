@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import BoardingPassDisplay from '../components/BoardingPassDisplay';
 import './CheckInPage.css';
@@ -12,9 +13,23 @@ import './CheckInPage.css';
  * - Hiển thị thẻ lên máy bay (boarding pass) với QR code
  */
 export default function CheckInPage() {
+  const [searchParams] = useSearchParams();
+
   // State quản lý dữ liệu form
   const [pnrCode, setPnrCode] = useState('');
   const [passengerName, setPassengerName] = useState('');
+
+  // Auto fill form fields from query params when page loads
+  useEffect(() => {
+    const pnr = searchParams.get('pnr');
+    const name = searchParams.get('name');
+    if (pnr) {
+      setPnrCode(pnr.toUpperCase());
+    }
+    if (name) {
+      setPassengerName(name);
+    }
+  }, [searchParams]);
   const [safetyCommitment, setSafetyCommitment] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
 
@@ -55,7 +70,7 @@ export default function CheckInPage() {
     // Gọi API Check-in
     setLoading(true);
     try {
-      const response = await axios.post('/api/check-in', {
+      const response = await axios.post('http://127.0.0.1:8000/api/check-in', {
         pnr_code: pnrCode.toUpperCase(),
         passenger_name: passengerName.trim(),
       });

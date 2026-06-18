@@ -105,7 +105,7 @@ export default function HomePage() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="min-h-[100dvh] bg-zinc-50 text-zinc-900 font-sans font-medium selection:bg-blue-600 selection:text-white"
+      className="min-h-[100dvh] bg-gradient-to-b from-slate-50 via-white to-slate-50 text-zinc-900 font-sans font-medium selection:bg-blue-500/20 selection:text-zinc-900"
     >
       
       {/* 1. TOP NAVIGATION */}
@@ -124,10 +124,11 @@ export default function HomePage() {
             className="w-full h-full object-cover"
           />
           {/* Subtle gradient overlay to ensure text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-black/10"></div>
           
-          {/* 3. AMBIENT SUNGLOW GRADIENT (DEPTH) */}
-          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-to-tr from-blue-600/40 via-amber-400/20 to-transparent blur-[120px] rounded-full pointer-events-none z-0 mix-blend-screen -translate-x-1/4 translate-y-1/4"></div>
+          {/* 3. AMBIENT SUNGLOW GRADIENT (DEPTH) — Enhanced multi-orb */}
+          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-to-tr from-blue-600/40 via-amber-400/20 to-transparent blur-[150px] rounded-full pointer-events-none z-0 mix-blend-screen -translate-x-1/4 translate-y-1/4"></div>
+          <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-violet-500/15 via-blue-400/10 to-transparent blur-[140px] rounded-full pointer-events-none z-0 mix-blend-screen translate-x-1/4"></div>
 
           {/* 2. BRANDED SVG FLIGHT PATH OVERLAY */}
           <svg className="absolute bottom-0 left-0 w-3/4 h-3/4 pointer-events-none z-0" viewBox="0 0 800 600">
@@ -151,10 +152,10 @@ export default function HomePage() {
           </svg>
           
           <div className="absolute top-1/3 -translate-y-1/2 left-8 md:left-16 max-w-2xl text-white z-10">
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-[1.1] mb-6 drop-shadow-2xl">
+            <h1 className="font-display text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-6 drop-shadow-2xl">
               Khám phá thế giới <br/> với sự tĩnh lặng.
             </h1>
-            <p className="text-lg md:text-xl text-white font-medium max-w-[45ch] mb-10 drop-shadow-xl">
+            <p className="text-lg md:text-xl text-white/90 font-medium max-w-[45ch] mb-10 drop-shadow-xl leading-relaxed">
               Trải nghiệm hàng không chuẩn 5 sao. Không ồn ào, không rườm rà. Chỉ có bạn và hành trình phía trước.
             </p>
           </div>
@@ -168,11 +169,14 @@ export default function HomePage() {
         </div>
 
         {/* Floating Search Bento Card */}
+        {/* Ambient glow behind search card */}
+        <div className="relative z-10 w-full max-w-5xl -mt-16 md:-mt-24">
+          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-br from-blue-500/8 via-violet-500/5 to-transparent blur-[100px] rounded-full pointer-events-none" />
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-          className="relative z-10 w-full max-w-5xl bg-white border border-zinc-200 rounded-[2rem] p-6 md:p-8 shadow-xl shadow-zinc-200/50 -mt-16 md:-mt-24"
+          className="relative w-full backdrop-blur-xl bg-white/75 border border-slate-200/50 rounded-[2rem] p-6 md:p-8 shadow-[0_8px_40px_-8px_rgba(0,0,0,0.08),0_2px_16px_-4px_rgba(0,0,0,0.04)]"
         >
           {/* Search Panel Top Row: Toggles (Bento Search Engine) */}
           <div className="flex flex-wrap gap-4 mb-6 border-b border-zinc-100 pb-4 justify-between items-center relative z-20">
@@ -362,29 +366,33 @@ export default function HomePage() {
               onClick={handleSearch}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded-xl transition-all shadow-[0_8px_30px_rgb(37,99,235,0.2)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.35)] cursor-pointer"
+              className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold px-4 rounded-xl transition-all shadow-[0_8px_30px_rgb(37,99,235,0.25)] hover:shadow-[0_12px_36px_rgb(37,99,235,0.4)] cursor-pointer shimmer-on-hover"
             >
               Tìm chuyến bay
             </motion.button>
 
           </div>
         </motion.div>
+        </div>
       </section>
 
       {/* 3. FEATURED DESTINATIONS (Bento Grid Logic) */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-24">
+      <section className="relative max-w-7xl mx-auto px-6 md:px-12 py-24">
+        {/* Ambient glow behind destinations grid */}
+        <div className="absolute top-1/3 left-1/4 w-[500px] h-[400px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none -z-10" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[350px] bg-violet-500/4 blur-[130px] rounded-full pointer-events-none -z-10" />
         <div className="mb-12 md:mb-16">
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-zinc-900">
+          <h2 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-zinc-900">
             Khám phá Việt Nam cùng Skylink
           </h2>
-          <p className="text-lg text-zinc-500 font-medium max-w-2xl">
+          <p className="text-lg text-zinc-500 font-medium max-w-2xl leading-relaxed">
             Các đường bay hàng đầu đang được săn đón với mức giá cực kỳ ưu đãi.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[300px]">
           {/* Main Card (Span 2x2) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-2 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-2 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://static-images.vnncdn.net/files/publish/2022/7/15/ho-hoan-kiem-542.jpg?width=0&s=la9nEfwz2GW8QkJ5hoQ9VA" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -405,10 +413,10 @@ export default function HomePage() {
               
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 1 (Span 2x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.03, y: -4 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://images.unsplash.com/photo-1516815231560-8f41ec531527?auto=format&fit=crop&q=80&w=1000" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -422,10 +430,10 @@ export default function HomePage() {
                 
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 2 (Span 1x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&q=80" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -436,10 +444,10 @@ export default function HomePage() {
               <h3 className="text-white text-xl font-bold tracking-tight mb-1">Đà Nẵng</h3>
               <p className="text-white/80 text-sm font-medium">Từ 499.000 VNĐ</p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 3 (Span 1x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://haycafe.vn/wp-content/uploads/2022/01/Hinh-anh-Da-Lat-suong-mu.jpg" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -450,10 +458,10 @@ export default function HomePage() {
               <h3 className="text-white text-xl font-bold tracking-tight mb-1">Đà Lạt</h3>
               <p className="text-white/80 text-sm font-medium">Từ 399.000 VNĐ</p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 4 (Span 2x2) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-2 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-2 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://img6.thuthuatphanmem.vn/uploads/2022/02/09/anh-bia-dep-thanh-pho-ho-chi-minh_031024011.jpg" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -467,10 +475,10 @@ export default function HomePage() {
                 
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 5 (Span 2x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.03, y: -4 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-2 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&q=80" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -483,10 +491,10 @@ export default function HomePage() {
                 <p className="text-white/80 font-medium">Từ 850.000 VNĐ</p>
                 </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 6 (Span 1x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://khoinguonsangtao.vn/wp-content/uploads/2022/11/hinh-anh-sapa.jpg" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -497,10 +505,10 @@ export default function HomePage() {
               <h3 className="text-white text-xl font-bold tracking-tight mb-1">Sapa</h3>
               <p className="text-white/80 text-sm font-medium">Từ 699.000 VNĐ</p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sub Card 7 (Span 1x1) */}
-          <div className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-sm cursor-pointer">
+          <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 24 }} className="relative overflow-hidden group rounded-[2rem] md:col-span-1 md:row-span-1 shadow-md hover:shadow-2xl cursor-pointer transition-shadow duration-500">
             <img 
               src="https://anhdephd.vn/wp-content/uploads/2022/04/anh-hoi-an.jpg" 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
@@ -511,18 +519,21 @@ export default function HomePage() {
               <h3 className="text-white text-xl font-bold tracking-tight mb-1">Hội An</h3>
               <p className="text-white/80 text-sm font-medium">Từ 550.000 VNĐ</p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* 4. EXCLUSIVE PROMOTIONS (Cinematic Carousel) */}
-      <section className="bg-zinc-50 py-24 border-y border-zinc-200/60 relative">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+      <section className="bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 py-24 border-y border-slate-200/40 relative overflow-hidden">
+        {/* Ambient orbs for promotions section */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[400px] bg-blue-500/4 blur-[160px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[350px] bg-rose-500/3 blur-[140px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 md:px-12 mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
           <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 text-zinc-900">
+            <h2 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight mb-3 text-zinc-900">
               Ưu đãi mùa hè năm nay 
             </h2>
-            <p className="text-zinc-500 font-medium">Nâng tầm trải nghiệm với mức giá không tưởng.</p>
+            <p className="text-zinc-500 font-medium leading-relaxed">Nâng tầm trải nghiệm với mức giá không tưởng.</p>
           </div>
           <div className="hidden md:flex gap-2">
             <button className="w-12 h-12 rounded-full border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-100 transition-colors shadow-sm cursor-pointer">
@@ -534,7 +545,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 scrollbar-hide relative z-10">
           {[
             { tag: "Flash Sale", title: "Giảm 20% Hạng Thương Gia", desc: "Bay đẳng cấp, giá bất ngờ. Áp dụng cho mọi chuyến bay nội địa cuối tuần.", color: "text-red-600 bg-red-50 border-red-200", glow: "bg-red-500/20", shadow: "shadow-[0_12px_40px_rgba(220,38,38,0.1)]", border: "border-red-200", link: "/promotions" },
             { tag: "Voucher", title: "Tặng Hành Lý Trọng Lượng Mở Rộng", desc: "Tự do mang theo mọi thứ bạn cần với gói 30kg hoàn toàn miễn phí.", color: "text-blue-600 bg-blue-50 border-blue-200", glow: "bg-blue-500/20", shadow: "shadow-[0_8px_30px_rgb(0,0,0,0.02)]", border: "border-slate-100", link: "/promotions" },
@@ -546,14 +557,14 @@ export default function HomePage() {
               initial="rest"
               onClick={() => navigate(promo.link)}
               variants={{ rest: { y: 0 }, hover: { y: -6 } }}
-              className={`snap-start shrink-0 w-[320px] md:w-[420px] bg-white border ${promo.border} rounded-3xl relative flex flex-col cursor-pointer group ${promo.shadow} overflow-hidden`}
+              className={`snap-start shrink-0 w-[320px] md:w-[420px] backdrop-blur-sm bg-white/90 border ${promo.border} rounded-3xl relative flex flex-col cursor-pointer group shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] overflow-hidden transition-shadow duration-500`}
             >
-              {/* Fake Ticket Cutouts (Left & Right semicircles) */}
-              <div className="absolute top-[80px] -left-4 w-8 h-8 bg-zinc-50 rounded-full z-10 border-r border-slate-100"></div>
-              <div className="absolute top-[80px] -right-4 w-8 h-8 bg-zinc-50 rounded-full z-10 border-l border-slate-100"></div>
+              {/* Premium Ticket Cutouts (Left & Right semicircles) */}
+              <div className="absolute top-[80px] -left-[14px] w-[28px] h-[28px] bg-gradient-to-b from-slate-50 to-white rounded-full z-10 border-r border-slate-200/60 shadow-inner"></div>
+              <div className="absolute top-[80px] -right-[14px] w-[28px] h-[28px] bg-gradient-to-b from-slate-50 to-white rounded-full z-10 border-l border-slate-200/60 shadow-inner"></div>
               
-              {/* Dashed Line separating Head and Foot */}
-              <div className="absolute top-[96px] left-6 right-6 border-t border-dashed border-slate-200 z-10"></div>
+              {/* Premium Dashed Divider */}
+              <div className="absolute top-[94px] left-8 right-8 border-t-2 border-dashed border-slate-200/70 z-10"></div>
 
               {/* Ambient Radial Glow at bottom right */}
               <div className={`absolute -bottom-16 -right-16 w-64 h-64 rounded-full blur-[60px] pointer-events-none z-0 ${promo.glow}`}></div>
@@ -585,9 +596,13 @@ export default function HomePage() {
         </div>
 
         {/* Custom Sleek Progress Indicator */}
-        <div className="max-w-7xl mx-auto px-6 md:px-12 mt-2 hidden md:block">
-          <div className="h-[2px] w-[300px] bg-slate-200 rounded-full overflow-hidden relative">
-            <div className="absolute top-0 left-0 h-full w-1/3 bg-blue-600 rounded-full"></div>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 mt-4 hidden md:block relative z-10">
+          <div className="h-[3px] w-[300px] bg-slate-200/60 rounded-full overflow-hidden relative">
+            <motion.div 
+              className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+              animate={{ x: [0, 200, 0] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            />
           </div>
         </div>
       </section>
@@ -598,7 +613,7 @@ export default function HomePage() {
         {/* Quầng sáng môi trường phía sau các thẻ dịch vụ */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-br from-blue-500/5 to-indigo-500/5 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-16 text-center md:text-left bg-gradient-to-r from-zinc-900 via-zinc-800 to-blue-900 bg-clip-text text-transparent">
+        <h2 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight mb-16 text-center md:text-left bg-gradient-to-r from-zinc-900 via-zinc-800 to-blue-900 bg-clip-text text-transparent">
           Dịch vụ đẳng cấp
         </h2>
         
@@ -697,7 +712,7 @@ export default function HomePage() {
                Đội bay hiện đại nhất
             </div>
             <h2 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 text-white leading-tight">
-              Trải nghiệm <br/><span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">vượt đỉnh mây.</span>
+              Trải nghiệm <br/><span className="bg-gradient-to-r from-blue-400 via-sky-400 to-indigo-400 bg-clip-text text-transparent">vượt đỉnh mây.</span>
             </h2>
             <p className="text-lg md:text-xl text-zinc-400 font-medium leading-relaxed tracking-tight mb-12 max-w-xl">
               Sở hữu đội bay thế hệ mới bao gồm Boeing 787 Dreamliner và Airbus A321neo. Skylink cam kết mang đến sự an toàn tuyệt đối, giảm thiểu tiếng ồn và không gian khoang khách siêu thực.

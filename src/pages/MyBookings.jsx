@@ -129,6 +129,26 @@ function BookingCard({ booking, idx }) {
   const airline = getAirline(flight?.flight_number ?? "");
   const status = booking.status;
 
+  const getCheckInStatus = () => {
+    if (!flight || status !== "paid") {
+      return { isOpen: false, label: "Làm thủ tục (Check-in)" };
+    }
+    const depTime = new Date(flight.departure_time).getTime();
+    const now = new Date().getTime();
+    const checkInOpenTime = depTime - 24 * 60 * 60 * 1000;
+    const checkInCloseTime = depTime - 2 * 60 * 60 * 1000;
+
+    if (now < checkInOpenTime) {
+      return { isOpen: false, label: "Làm thủ tục (Chưa mở)" };
+    } else if (now > checkInCloseTime) {
+      return { isOpen: false, label: "Làm thủ tục (Đã đóng)" };
+    } else {
+      return { isOpen: true, label: "Làm thủ tục (Check-in)" };
+    }
+  };
+
+  const checkInStatus = getCheckInStatus();
+
   return (
     <motion.div
       key={booking.id}
@@ -336,6 +356,30 @@ function BookingCard({ booking, idx }) {
           >
             Thanh toán ngay
           </motion.button>
+        )}
+
+        {/* ── Check-in button for paid bookings ── */}
+        {status === "paid" && (
+          <div className="flex flex-col w-full">
+            <motion.button
+              whileHover={checkInStatus.isOpen ? { scale: 1.01 } : {}}
+              whileTap={checkInStatus.isOpen ? { scale: 0.98 } : {}}
+              disabled={!checkInStatus.isOpen}
+              onClick={() => navigate(`/check-in?pnr=${booking.pnr_code}`)}
+              className={`mt-4 w-full py-3 rounded-2xl text-sm font-black text-center transition-all ${
+                checkInStatus.isOpen
+                  ? `text-white bg-gradient-to-r ${airline.accent} shadow-md cursor-pointer hover:shadow-lg`
+                  : "bg-zinc-100 border border-zinc-200 text-zinc-400 cursor-not-allowed shadow-none"
+              }`}
+            >
+              {checkInStatus.label}
+            </motion.button>
+            {!checkInStatus.isOpen && (
+              <p className="text-[10px] text-zinc-400 text-center mt-1.5 font-medium">
+                * Check-in online mở từ 24 giờ đến 2 giờ trước giờ cất cánh
+              </p>
+            )}
+          </div>
         )}
 
         {/* ── Self-service: Reschedule / Cancel (only if flight hasn't departed) ── */}

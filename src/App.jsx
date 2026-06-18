@@ -11,6 +11,7 @@ import Checkout from './pages/Checkout';
 import MyBookings from './pages/MyBookings';
 import SkyClub from './pages/SkyClub';
 import PaymentRetry from './pages/PaymentRetry';
+import CheckInPage from './pages/CheckInPage';
 
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -40,6 +41,7 @@ function App() {
   <Route path="/my-bookings" element={<MyBookings />} />
   <Route path="/skyclub" element={<SkyClub />} />
   <Route path="/payment-retry/:bookingId" element={<PaymentRetry />} />
+  <Route path="/check-in" element={<CheckInPage />} />
 
   <Route path="/" element={<HomePage />} />
 

@@ -7,10 +7,28 @@ function Navbar() {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
+  const handleLogout = async () => {
+  try {
+    const token =
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token");
+
+    await fetch("http://127.0.0.1:8000/api/auth/logout", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (err) {
+    console.log("Logout API lỗi nhưng vẫn clear local");
+  }
+
+  localStorage.clear();
+  sessionStorage.clear();
+
+  navigate("/login");
+};
 
   return (
     <nav

@@ -10,7 +10,7 @@ import Support from './pages/Support';
 import Checkout from './pages/Checkout';
 import MyBookings from './pages/MyBookings';
 import SkyClub from './pages/SkyClub';
-
+import RequireAdmin from "./components/admin/RequireAdmin";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Flights from "./pages/admin/Flights";
@@ -39,6 +39,7 @@ function App() {
 
   <Route path="/" element={<HomePage />} />
 
+  <Route element={<RequireAdmin />}>
   <Route path="/admin" element={<AdminLayout />}>
     <Route index element={<Dashboard />} />
     <Route path="flights" element={<Flights />} />
@@ -47,6 +48,7 @@ function App() {
     <Route path="airports" element={<Airports />} />
     <Route path="profile" element={<Profile />} />
   </Route>
+</Route>
 </Routes>
     </BrowserRouter>
   );

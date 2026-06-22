@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api";
+
 import {
   Card,
   Row,
@@ -8,9 +10,7 @@ import {
   Table,
 } from "react-bootstrap";
 
-import {
-  Bar
-} from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 
 import {
   Chart as ChartJS,
@@ -30,6 +30,8 @@ ChartJS.register(
 );
 
 function Dashboard() {
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState({
@@ -43,6 +45,26 @@ function Dashboard() {
   const [recentFlights, setRecentFlights] = useState([]);
 
   useEffect(() => {
+    const user =
+      JSON.parse(localStorage.getItem("user")) ||
+      JSON.parse(sessionStorage.getItem("user"));
+
+    // Chưa đăng nhập
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    // Không phải admin
+    const isAdmin = user.roles?.some(
+      (role) => role.name === "admin"
+    );
+
+    if (!isAdmin) {
+      navigate("/");
+      return;
+    }
+
     fetchDashboard();
   }, []);
 
@@ -99,12 +121,13 @@ function Dashboard() {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="d-flex justify-content-center vh-100 align-items-center">
         <Spinner />
       </div>
     );
+  }
 
   const chartData = {
     labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -118,13 +141,9 @@ function Dashboard() {
 
   return (
     <div className="container-fluid mt-4">
-
-      <h2 className="mb-4">
-        Dashboard Overview
-      </h2>
+      <h2 className="mb-4">Dashboard Overview</h2>
 
       <Row className="g-3">
-
         <Col md={3}>
           <Card className="shadow-sm border-0">
             <Card.Body>
@@ -156,9 +175,7 @@ function Dashboard() {
           <Card className="shadow-sm border-0">
             <Card.Body>
               <h6>Revenue</h6>
-              <h2>
-                {stats.revenue.toLocaleString()}
-              </h2>
+              <h2>{stats.revenue.toLocaleString()}</h2>
             </Card.Body>
           </Card>
         </Col>
@@ -169,7 +186,6 @@ function Dashboard() {
           <Card className="shadow-sm border-0">
             <Card.Body>
               <h5>Bookings Statistics</h5>
-
               <Bar data={chartData} />
             </Card.Body>
           </Card>
@@ -189,7 +205,6 @@ function Dashboard() {
       </Row>
 
       <Row className="mt-4">
-
         <Col md={6}>
           <Card className="shadow-sm border-0">
             <Card.Body>
@@ -211,9 +226,7 @@ function Dashboard() {
                       <td>{b.id}</td>
                       <td>{b.customer}</td>
                       <td>{b.flight}</td>
-                      <td>
-                        {b.amount.toLocaleString()}
-                      </td>
+                      <td>{b.amount.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -251,7 +264,6 @@ function Dashboard() {
             </Card.Body>
           </Card>
         </Col>
-
       </Row>
     </div>
   );

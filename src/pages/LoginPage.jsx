@@ -16,17 +16,21 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
   e.preventDefault();
+
   setLoading(true);
   setError("");
+  setSuccess("");
 
   try {
     const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         email: loginEmail,
-        password: loginPassword
-      })
+        password: loginPassword,
+      }),
     });
 
     const data = await response.json();
@@ -34,19 +38,28 @@ export default function LoginPage() {
     if (data.status === "success") {
       const storage = rememberMe ? localStorage : sessionStorage;
 
-      // 🔥 FIX KEY THỐNG NHẤT
       storage.setItem("token", data.access_token);
-
       storage.setItem("user", JSON.stringify(data.user));
 
       setSuccess(`Chào mừng ${data.user.name}`);
 
-      setTimeout(() => navigate("/"), 1500);
+      const isAdmin = data.user.roles?.some(
+        (role) => role.name === "admin"
+      );
+
+      setTimeout(() => {
+        if (isAdmin) {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }, 1500);
     } else {
-      setError(data.message || "Login failed");
+      setError(data.message || "Đăng nhập thất bại");
     }
-  } catch (err) {
-    setError("Server error");
+  } catch (error) {
+    console.error(error);
+    setError("Lỗi kết nối máy chủ");
   } finally {
     setLoading(false);
   }

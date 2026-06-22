@@ -36,9 +36,7 @@ function App() {
   <Route path="/checkout" element={<Checkout />} />
   <Route path="/my-bookings" element={<MyBookings />} />
   <Route path="/skyclub" element={<SkyClub />} />
-
   <Route path="/" element={<HomePage />} />
-
   <Route element={<RequireAdmin />}>
   <Route path="/admin" element={<AdminLayout />}>
     <Route index element={<Dashboard />} />

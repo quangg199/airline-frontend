@@ -28,6 +28,8 @@ function Flights() {
 
   const [saving, setSaving] = useState(false);
 
+  const [airports, setAirports] = useState([]);
+
   const emptyForm = {
     flight_number: "",
     departure_airport_id: "",
@@ -52,7 +54,7 @@ function Flights() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // FETCH DATA
+  // FETCH FLIGHTS
   const fetchFlights = useCallback(async () => {
     try {
       setLoading(true);
@@ -69,7 +71,7 @@ function Flights() {
       setFlights(res.data.data || []);
       setLastPage(res.data.meta?.last_page || 1);
     } catch (err) {
-      console.log("API error:", err);
+      console.log(err);
       setFlights([]);
     } finally {
       setLoading(false);
@@ -79,6 +81,25 @@ function Flights() {
   useEffect(() => {
     fetchFlights();
   }, [fetchFlights]);
+
+  // FETCH AIRPORTS (ĐÚNG BACKEND)
+  const fetchAirports = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+
+      const res = await api.get("/airports", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setAirports(res.data || []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAirports();
+  }, []);
 
   // ADD
   const handleAdd = () => {
@@ -90,7 +111,19 @@ function Flights() {
   // EDIT
   const handleEdit = (f) => {
     setEditId(f.id);
-    setForm(f);
+
+    setForm({
+      flight_number: f.flight_number || "",
+      departure_airport_id: f.departure_airport_id || "",
+      arrival_airport_id: f.arrival_airport_id || "",
+      departure_time: f.departure_time?.slice(0, 16) || "",
+      arrival_time: f.arrival_time?.slice(0, 16) || "",
+      aircraft_id: f.aircraft_id || "",
+      base_price: f.base_price || "",
+      available_seats: f.available_seats || "",
+      status: f.status || "scheduled",
+    });
+
     setShow(true);
   };
 
@@ -99,16 +132,40 @@ function Flights() {
     try {
       setSaving(true);
 
+      const token = localStorage.getItem("access_token");
+
+      const payload = {
+        flight_number: form.flight_number,
+        departure_airport_id: Number(form.departure_airport_id),
+        arrival_airport_id: Number(form.arrival_airport_id),
+        aircraft_id: Number(form.aircraft_id),
+        base_price: Number(form.base_price),
+        available_seats: Number(form.available_seats),
+        status: form.status,
+
+        departure_time: form.departure_time
+          ? form.departure_time.replace("T", " ") + ":00"
+          : null,
+
+        arrival_time: form.arrival_time
+          ? form.arrival_time.replace("T", " ") + ":00"
+          : null,
+      };
+
       if (editId) {
-        await api.put(`/admin/flights/${editId}`, form);
+        await api.put(`/admin/flights/${editId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await api.post("/admin/flights", form);
+        await api.post("/admin/flights", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
       setShow(false);
       fetchFlights();
     } catch (err) {
-      console.log("Save error:", err);
+      console.log(err.response?.data || err);
     } finally {
       setSaving(false);
     }
@@ -118,12 +175,13 @@ function Flights() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this flight?")) return;
 
-    try {
-      await api.delete(`/admin/flights/${id}`);
-      fetchFlights();
-    } catch (err) {
-      console.log(err);
-    }
+    const token = localStorage.getItem("access_token");
+
+    await api.delete(`/admin/flights/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    setFlights((prev) => prev.filter((f) => f.id !== id));
   };
 
   const statusBadge = (status) => {
@@ -179,13 +237,18 @@ function Flights() {
               <tr key={f.id}>
                 <td>{(page - 1) * 10 + i + 1}</td>
                 <td>{f.flight_number}</td>
+
+                  <td>
+                    {airports.find(a => a.id === f.departure_airport_id)?.city || airports.find(a => a.id === f.departure_airport_id)?.name || "?"}
+                    {" → "}
+                    {airports.find(a => a.id === f.arrival_airport_id)?.city || airports.find(a => a.id === f.arrival_airport_id)?.name || "?"}
+                  </td>
+
                 <td>
-                  {f.departure_airport_id} → {f.arrival_airport_id}
+                  {f.departure_time?.slice(0, 16)} <br />
+                  {f.arrival_time?.slice(0, 16)}
                 </td>
-                <td>
-                  {f.departure_time} <br />
-                  {f.arrival_time}
-                </td>
+
                 <td>{f.base_price}</td>
                 <td>{f.available_seats}</td>
                 <td>{statusBadge(f.status)}</td>
@@ -229,39 +292,121 @@ function Flights() {
 
         <Modal.Body>
           <Row>
-            {Object.keys(form).map((key) => (
-              <Col md={6} key={key} className="mb-3">
-                <Form.Label>{key}</Form.Label>
 
-                {key === "status" ? (
-                  <Form.Select
-                    value={form[key]}
-                    onChange={(e) =>
-                      setForm({ ...form, [key]: e.target.value })
-                    }
-                  >
-                    <option value="scheduled">Scheduled</option>
-                    <option value="delayed">Delayed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </Form.Select>
-                ) : (
-                  <Form.Control
-                    value={form[key]}
-                    onChange={(e) =>
-                      setForm({ ...form, [key]: e.target.value })
-                    }
-                  />
-                )}
-              </Col>
-            ))}
+            <Col md={6}>
+              <Form.Label>Flight Number</Form.Label>
+              <Form.Control
+                value={form.flight_number}
+                onChange={(e) =>
+                  setForm({ ...form, flight_number: e.target.value })
+                }
+              />
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Aircraft ID</Form.Label>
+              <Form.Control
+                value={form.aircraft_id}
+                onChange={(e) =>
+                  setForm({ ...form, aircraft_id: e.target.value })
+                }
+              />
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Departure Airport</Form.Label>
+              <Form.Select
+                value={form.departure_airport_id}
+                onChange={(e) =>
+                  setForm({ ...form, departure_airport_id: e.target.value })
+                }
+              >
+                <option value="">Select</option>
+                {airports.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} - {a.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Arrival Airport</Form.Label>
+              <Form.Select
+                value={form.arrival_airport_id}
+                onChange={(e) =>
+                  setForm({ ...form, arrival_airport_id: e.target.value })
+                }
+              >
+                <option value="">Select</option>
+                {airports.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} - {a.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Departure Time</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                value={form.departure_time}
+                onChange={(e) =>
+                  setForm({ ...form, departure_time: e.target.value })
+                }
+              />
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Arrival Time</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                value={form.arrival_time}
+                onChange={(e) =>
+                  setForm({ ...form, arrival_time: e.target.value })
+                }
+              />
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Price</Form.Label>
+              <Form.Control
+                value={form.base_price}
+                onChange={(e) =>
+                  setForm({ ...form, base_price: e.target.value })
+                }
+              />
+            </Col>
+
+            <Col md={6}>
+              <Form.Label>Seats</Form.Label>
+              <Form.Control
+                value={form.available_seats}
+                onChange={(e) =>
+                  setForm({ ...form, available_seats: e.target.value })
+                }
+              />
+            </Col>
+            <Col md={6}>
+              <Form.Label>Status</Form.Label>
+              <Form.Select
+                value={form.status}
+                onChange={(e) =>
+                  setForm({ ...form, status: e.target.value })
+                }
+              >
+                <option value="scheduled">Scheduled</option>
+                <option value="delayed">Delayed</option>
+                <option value="cancelled">Cancelled</option>
+              </Form.Select>
+            </Col>
+
           </Row>
         </Modal.Body>
 
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShow(false)}>
-            Close
-          </Button>
-
+          <Button onClick={() => setShow(false)}>Close</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>

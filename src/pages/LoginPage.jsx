@@ -19,18 +19,15 @@ export default function LoginPage() {
 
   setLoading(true);
   setError("");
-  setSuccess("");
 
   try {
     const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: loginEmail,
-        password: loginPassword,
-      }),
+        password: loginPassword
+      })
     });
 
     const data = await response.json();
@@ -38,28 +35,24 @@ export default function LoginPage() {
     if (data.status === "success") {
       const storage = rememberMe ? localStorage : sessionStorage;
 
-      storage.setItem("token", data.access_token);
+      storage.setItem("access_token", data.access_token);
       storage.setItem("user", JSON.stringify(data.user));
+
+      const isAdmin =
+        data.user.role === 1 ||
+        data.user.role === "1" ||
+        data.user.roles?.some(r => r.name === "admin");
 
       setSuccess(`Chào mừng ${data.user.name}`);
 
-      const isAdmin = data.user.roles?.some(
-        (role) => role.name === "admin"
-      );
-
       setTimeout(() => {
-        if (isAdmin) {
-          navigate("/admin");
-        } else {
-          navigate("/");
-        }
-      }, 1500);
+        navigate(isAdmin ? "/admin" : "/");
+      }, 1000);
     } else {
       setError(data.message || "Đăng nhập thất bại");
     }
-  } catch (error) {
-    console.error(error);
-    setError("Lỗi kết nối máy chủ");
+  } catch (err) {
+    setError("Không thể kết nối tới máy chủ");
   } finally {
     setLoading(false);
   }

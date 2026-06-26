@@ -11,39 +11,82 @@ function Bookings() {
     fetchBookings();
   }, []);
 
+  // ========================
+  // GET ALL (ADMIN API)
+  // ========================
   const fetchBookings = async () => {
     setLoading(true);
 
     try {
-      const res = await api.get("/admin/bookings");
+      const token = localStorage.getItem("access_token");
 
-      console.log("API RAW:", res.data);
+      const response = await api.get("/admin/bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      setBookings(res.data.data ?? []);
-    } catch (err) {
-      console.log(err);
+      setBookings(response.data.data || []);
+    } catch (error) {
+      console.log("API error:", error);
       setBookings([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // ========================
+  // DELETE (ADMIN API)
+  // ========================
   const deleteBooking = async (id) => {
-    if (!window.confirm("Delete this booking?")) return;
+    const confirmDelete = window.confirm("Delete this booking?");
+    if (!confirmDelete) return;
 
-    await api.delete(`/admin/bookings/${id}`);
+    try {
+      const token = localStorage.getItem("access_token");
 
-    setBookings((prev) => prev.filter((b) => b.id !== id));
+      await api.delete(`/admin/bookings/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    } catch (error) {
+      console.log("Delete error:", error);
+    }
   };
 
+  // ========================
+  // FILTER
+  // ========================
   const filteredBookings = bookings.filter((b) => {
     const keyword = search.toLowerCase();
 
-    return (
-      (b.user?.name || "").toLowerCase().includes(keyword) ||
-      (b.flight?.flight_number || "").toLowerCase().includes(keyword)
-    );
+    const passengerName =
+      b.tickets?.[0]?.passenger_name?.toLowerCase() || "";
+
+    const flightId =
+      b.flight?.id?.toString().toLowerCase() || "";
+
+    return passengerName.includes(keyword) || flightId.includes(keyword);
   });
+
+  // ========================
+  // STATUS COLOR
+  // ========================
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "paid":
+        return "#28a745";
+      case "pending":
+        return "#fd7e14";
+      case "cancelled":
+        return "#dc3545";
+      default:
+        return "#6c757d";
+    }
+  };
 
   if (loading) {
     return (
@@ -55,21 +98,24 @@ function Bookings() {
 
   return (
     <div className="container mt-4">
-      <h2>Bookings Management</h2>
+      <h2 className="mb-3">Admin Bookings Management</h2>
 
+      {/* SEARCH */}
       <Form className="mb-3">
         <Form.Control
-          placeholder="Search..."
+          type="text"
+          placeholder="Search passenger or flight ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </Form>
 
-      <Table bordered hover>
+      {/* TABLE */}
+      <Table striped bordered hover responsive>
         <thead>
           <tr>
             <th>ID</th>
-            <th>Customer</th>
+            <th>Passenger</th>
             <th>Flight</th>
             <th>Status</th>
             <th>Action</th>
@@ -81,13 +127,34 @@ function Bookings() {
             filteredBookings.map((b) => (
               <tr key={b.id}>
                 <td>{b.id}</td>
-                <td>{b.user?.name || "N/A"}</td>
-                <td>{b.flight?.flight_number || "N/A"}</td>
-                <td>{b.status}</td>
+
+                <td>
+                  {b.tickets?.[0]?.passenger_name || "N/A"}
+                </td>
+
+                <td>
+                  Flight #{b.flight?.id || "N/A"}
+                </td>
+
+                <td>
+                  <span
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "8px",
+                      color: "white",
+                      background: getStatusColor(b.status),
+                      fontSize: "12px",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {b.status}
+                  </span>
+                </td>
+
                 <td>
                   <Button
-                    size="sm"
                     variant="danger"
+                    size="sm"
                     onClick={() => deleteBooking(b.id)}
                   >
                     Delete

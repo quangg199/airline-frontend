@@ -5,24 +5,24 @@ export default function RequireAdmin() {
     localStorage.getItem("user") ||
     sessionStorage.getItem("user");
 
-  if (!rawUser) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!rawUser) return <Navigate to="/login" replace />;
 
-  let user = null;
-
+  let user;
   try {
     user = JSON.parse(rawUser);
-  } catch (e) {
+  } catch {
     return <Navigate to="/login" replace />;
   }
 
+  // chuẩn hoá role
+  const role =
+    user?.role ??
+    user?.roles?.[0]?.id ??
+    user?.roles?.[0]?.name;
+
   const isAdmin =
-    user?.roles?.some((r) => r.name === "admin") || false;
+    Number(role) === 1 ||
+    role === "admin";
 
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
+  return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
 }

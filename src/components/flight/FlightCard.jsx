@@ -167,7 +167,7 @@ export default function FlightCard({ flight, onSelect }) {
         layout: { type: "spring", stiffness: 300, damping: 30 },
         default: { type: "spring", stiffness: 380, damping: 28 },
       }}
-      className="list-none w-full bg-white rounded-[24px] border border-zinc-200/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)] overflow-hidden cursor-default"
+      className="list-none w-full bg-white/90 backdrop-blur-sm rounded-[24px] border border-slate-200/60 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] overflow-hidden cursor-default hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-500"
     >
       {/* ── Top accent bar (airline color) ── */}
       <div className={`h-[3px] w-full bg-gradient-to-r ${airline.accent}`} />
@@ -178,7 +178,7 @@ export default function FlightCard({ flight, onSelect }) {
         <div className="hidden md:flex items-stretch gap-0">
 
           {/* ── Col 1: Airline identity ── */}
-          <div className="flex flex-col justify-center gap-2 pr-5 min-w-[140px]">
+          <div className="flex flex-col justify-center gap-2 pr-5 w-[160px] flex-shrink-0">
             <div className="flex items-center gap-2.5">
               {airline.logo}
               <div>
@@ -244,7 +244,7 @@ export default function FlightCard({ flight, onSelect }) {
           <div className="w-px bg-zinc-100 mx-1" />
 
           {/* ── Col 3: Metadata ── */}
-          <div className="flex flex-col justify-center gap-2.5 px-5 min-w-[170px]">
+          <div className="flex flex-col justify-center gap-2.5 px-5 w-[170px] flex-shrink-0">
             <MetaRow icon={<CalendarBlank size={13} weight="duotone" className="text-blue-500" />} label="Ngày bay" value={formatDate(flight.departure_time)} />
             <MetaRow icon={<SuitcaseRolling size={13} weight="duotone" className="text-blue-500" />} label="Hành lý" value="20kg ký gửi" />
             <MetaRow icon={<span className="text-[11px]">🛩</span>} label="Máy bay" value={aircraftModel} />
@@ -254,7 +254,7 @@ export default function FlightCard({ flight, onSelect }) {
           <div className="w-px bg-zinc-100 mx-1" />
 
           {/* ── Col 4: Price + CTA ── */}
-          <div className="flex flex-col items-end justify-center pl-5 min-w-[180px]">
+          <div className="flex flex-col items-end justify-center pl-5 w-[200px] flex-shrink-0">
             <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Giá / khách</div>
 
             {hasDiscount && (
@@ -273,7 +273,7 @@ export default function FlightCard({ flight, onSelect }) {
               onClick={() => onSelect(flight)}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className={`w-full py-3 px-5 rounded-2xl text-sm font-black text-white bg-gradient-to-r ${airline.accent} shadow-lg hover:shadow-xl transition-shadow cursor-pointer outline-none`}
+              className={`flex items-center justify-center whitespace-nowrap px-6 py-3 rounded-xl text-sm font-black text-white bg-gradient-to-r ${airline.accent} shadow-lg hover:shadow-xl transition-all cursor-pointer outline-none shimmer-on-hover`}
             >
               Chọn chuyến bay
             </motion.button>

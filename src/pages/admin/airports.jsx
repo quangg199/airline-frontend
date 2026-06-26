@@ -5,10 +5,12 @@ import { Table, Button, Spinner, Form, Modal } from "react-bootstrap";
 function Airports() {
   const [airports, setAirports] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
 
   const [show, setShow] = useState(false);
   const [editId, setEditId] = useState(null);
+
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -17,140 +19,112 @@ function Airports() {
     code: "",
   });
 
+  // =====================
+  // FETCH DATA
+  // =====================
   useEffect(() => {
     fetchAirports();
   }, []);
 
-  // ======================
-  // GET ALL AIRPORTS
-  // ======================
   const fetchAirports = async () => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
       const res = await api.get("/airports");
 
-      console.log("Airports:", res.data);
+      console.log("API RESPONSE:", res.data);
 
-      setAirports(res.data || []);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || [];
+
+      setAirports(data);
     } catch (err) {
-      console.error("Fetch airports failed:", err);
+      console.log("API ERROR:", err.response || err);
       setAirports([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ======================
-  // OPEN ADD
-  // ======================
+  // =====================
+  // ADD
+  // =====================
   const handleAdd = () => {
     setEditId(null);
-
-    setForm({
-      name: "",
-      city: "",
-      code: "",
-    });
-
+    setForm({ name: "", city: "", code: "" });
     setShow(true);
   };
 
-  // ======================
-  // OPEN EDIT
-  // ======================
+  // =====================
+  // EDIT
+  // =====================
   const handleEdit = (airport) => {
     setEditId(airport.id);
-
     setForm({
-      name: airport.name,
-      city: airport.city,
-      code: airport.code,
+      name: airport.name || "",
+      city: airport.city || "",
+      code: airport.code || "",
     });
-
     setShow(true);
   };
 
-  // ======================
-  // SAVE
-  // ======================
+  // =====================
+  // SAVE (CREATE / UPDATE)
+  // =====================
   const handleSave = async () => {
-    if (!form.name || !form.city || !form.code) {
-      alert("Please fill all fields");
-      return;
-    }
+    setSaving(true);
 
     try {
-      setSaving(true);
-
-      const payload = {
-        ...form,
-        code: form.code.toUpperCase(),
-      };
-
       if (editId) {
-        await api.put(
-          `/admin/airports/${editId}`,
-          payload
-        );
+        await api.put(`/airports/${editId}`, form);
       } else {
-        await api.post(
-          "/admin/airports",
-          payload
-        );
+        await api.post("/airports", form);
       }
 
       setShow(false);
-
       fetchAirports();
     } catch (err) {
-      console.error(err);
-
-      alert(
-        err?.response?.data?.message ||
-          "Save airport failed"
-      );
+      console.log("SAVE ERROR:", err.response || err);
     } finally {
       setSaving(false);
     }
   };
 
-  // ======================
+  // =====================
   // DELETE
-  // ======================
+  // =====================
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Delete this airport?"
-    );
-
+    const confirmDelete = window.confirm("Delete this airport?");
     if (!confirmDelete) return;
 
     try {
-      await api.delete(`/admin/airports/${id}`);
+      await api.delete(`/airports/${id}`);
 
-      setAirports((prev) =>
-        prev.filter((a) => a.id !== id)
-      );
+      setAirports((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
-      console.error(err);
+      console.log("DELETE ERROR:", err.response || err);
 
-      alert("Delete airport failed");
+      setAirports((prev) => prev.filter((a) => a.id !== id));
     }
   };
 
-  // ======================
+  // =====================
   // FILTER
-  // ======================
+  // =====================
   const filteredAirports = airports.filter((a) => {
     const keyword = search.toLowerCase();
 
     return (
-      a.name?.toLowerCase().includes(keyword) ||
-      a.city?.toLowerCase().includes(keyword) ||
-      a.code?.toLowerCase().includes(keyword)
+      (a.name || "").toLowerCase().includes(keyword) ||
+      (a.city || "").toLowerCase().includes(keyword) ||
+      (a.code || "").toLowerCase().includes(keyword)
     );
   });
 
+  // =====================
+  // LOADING UI
+  // =====================
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -159,70 +133,66 @@ function Airports() {
     );
   }
 
+  // =====================
+  // UI
+  // =====================
   return (
     <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Airports Management</h2>
+      <h2 className="mb-3">Airports Management</h2>
 
-        <Button onClick={handleAdd}>
-          + Add Airport
-        </Button>
+      {/* SEARCH + ADD */}
+      <div className="d-flex gap-2 mb-3">
+        <Form.Control
+          type="text"
+          placeholder="Search airport..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <Button onClick={handleAdd}>+ Add Airport</Button>
       </div>
 
-      <Form.Control
-        className="mb-3"
-        type="text"
-        placeholder="Search airport..."
-        value={search}
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
-      />
-
-      <Table striped bordered hover responsive>
+      {/* TABLE */}
+      <Table bordered hover>
         <thead>
           <tr>
             <th>ID</th>
-            <th>Airport Name</th>
+            <th>Name</th>
             <th>City</th>
             <th>Code</th>
-            <th width="180">Actions</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
           {filteredAirports.length > 0 ? (
-            filteredAirports.map((airport) => (
-              <tr key={airport.id}>
-                <td>{airport.id}</td>
-
-                <td>{airport.name}</td>
-
-                <td>{airport.city}</td>
-
+            filteredAirports.map((a) => (
+              <tr key={a.id}>
+                <td>{a.id}</td>
+                <td>{a.name}</td>
+                <td>{a.city}</td>
                 <td>
-                  <span className="badge bg-primary">
-                    {airport.code}
+                  <span
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      background: "#2563eb",
+                      color: "#fff",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {a.code}
                   </span>
                 </td>
 
                 <td>
-                  <Button
-                    size="sm"
-                    className="me-2"
-                    onClick={() =>
-                      handleEdit(airport)
-                    }
-                  >
+                  <Button size="sm" onClick={() => handleEdit(a)}>
                     Edit
-                  </Button>
-
+                  </Button>{" "}
                   <Button
                     size="sm"
                     variant="danger"
-                    onClick={() =>
-                      handleDelete(airport.id)
-                    }
+                    onClick={() => handleDelete(a.id)}
                   >
                     Delete
                   </Button>
@@ -231,10 +201,7 @@ function Airports() {
             ))
           ) : (
             <tr>
-              <td
-                colSpan="5"
-                className="text-center"
-              >
+              <td colSpan="5" className="text-center">
                 No airports found
               </td>
             </tr>
@@ -242,79 +209,52 @@ function Airports() {
         </tbody>
       </Table>
 
-      <Modal
-        show={show}
-        onHide={() => setShow(false)}
-      >
+      {/* MODAL */}
+      <Modal show={show} onHide={() => setShow(false)}>
         <Modal.Header closeButton>
           <Modal.Title>
-            {editId
-              ? "Edit Airport"
-              : "Add Airport"}
+            {editId ? "Edit Airport" : "Add Airport"}
           </Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Airport Name
-            </Form.Label>
-
+          <Form>
             <Form.Control
+              className="mb-2"
+              placeholder="Airport Name"
               value={form.name}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  name: e.target.value,
-                })
+                setForm({ ...form, name: e.target.value })
               }
             />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>City</Form.Label>
 
             <Form.Control
+              className="mb-2"
+              placeholder="City"
               value={form.city}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  city: e.target.value,
-                })
+                setForm({ ...form, city: e.target.value })
               }
             />
-          </Form.Group>
-
-          <Form.Group>
-            <Form.Label>Code</Form.Label>
 
             <Form.Control
+              className="mb-2"
+              placeholder="Code (e.g. HAN)"
               value={form.code}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  code: e.target.value.toUpperCase(),
-                })
+                setForm({ ...form, code: e.target.value })
               }
             />
-          </Form.Group>
+          </Form>
         </Modal.Body>
 
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShow(false)}
-          >
+          <Button variant="secondary" onClick={() => setShow(false)}>
             Close
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving
-              ? "Saving..."
-              : "Save Airport"}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
           </Button>
         </Modal.Footer>
       </Modal>

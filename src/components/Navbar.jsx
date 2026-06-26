@@ -582,10 +582,10 @@ export default function Navbar() {
               boxShadow: isElevated
                 ? "0 8px 40px -4px rgba(0,0,0,0.14), 0 2px 12px -2px rgba(0,0,0,0.08)"
                 : "0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 8px -1px rgba(0,0,0,0.04)",
-              backgroundColor: isElevated ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.78)",
+                backgroundColor: isElevated ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.65)",
             }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="relative flex items-center justify-between h-[60px] px-4 rounded-2xl border border-zinc-200/70 backdrop-blur-[24px]"
+            className="relative flex items-center justify-between h-[60px] px-4 rounded-2xl border border-slate-200/40 backdrop-blur-[28px]"
           >
             {/* ── Gradient Top Shimmer ── */}
             <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />

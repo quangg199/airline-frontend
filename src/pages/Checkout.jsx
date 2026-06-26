@@ -20,7 +20,7 @@ export default function Checkout() {
   const [flights, setFlights] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState({ outbound: [], return: [] });
-  const [paymentMethod, setPaymentMethod] = useState("visa");
+  const [paymentMethod, setPaymentMethod] = useState("vnpay");
 
   useEffect(() => {
     const savedFlights = JSON.parse(localStorage.getItem("selected_flights")) || [];
@@ -93,6 +93,7 @@ export default function Checkout() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
+          "Accept": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(checkoutPayload)
@@ -101,7 +102,7 @@ export default function Checkout() {
       const bookingData = await bookingRes.json();
 
       if (!bookingRes.ok || bookingData.status !== "success") {
-        alert("Lỗi đặt vé: " + (bookingData.message || "Đơn giữ chỗ có thể đã hết hạn (5 phút)."));
+        alert("Lỗi đặt vé: " + (bookingData.message || "Đơn giữ chỗ có thể đã hết hạn (15 phút)."));
         setLoading(false);
         return;
       }
@@ -122,6 +123,7 @@ export default function Checkout() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
+          "Accept": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -188,7 +190,7 @@ export default function Checkout() {
             Thanh toán
           </h1>
           <p className="text-zinc-500 font-medium max-w-2xl">
-            Hoàn tất thông tin hành khách và thanh toán để nhận mã đặt chỗ. Đơn đặt chỗ sẽ tự động bị hủy sau 5 phút nếu chưa được thanh toán.
+            Hoàn tất thông tin hành khách và thanh toán để nhận mã đặt chỗ. Đơn đặt chỗ sẽ tự động bị hủy sau 15 phút nếu chưa được thanh toán.
           </p>
         </div>
 
@@ -253,7 +255,7 @@ export default function Checkout() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {[
-                  { id: 'visa', label: 'Thẻ Visa/Master', icon: CreditCard },
+                  { id: 'vnpay', label: 'Cổng VNPAY', icon: QrCode },
                   { id: 'momo', label: 'Ví MoMo', icon: DeviceMobile }
                 ].map((method) => (
                   <div 
@@ -273,14 +275,11 @@ export default function Checkout() {
               
               {/* VÙNG NHẬP LIỆU MOCK THANH TOÁN */}
               <div className="bg-zinc-50 border border-zinc-200 p-6 rounded-xl">
-                {paymentMethod === 'visa' && (
+                {paymentMethod === 'vnpay' && (
                   <div className="space-y-4">
-                    <p className="text-sm font-bold text-zinc-700 mb-2">Nhập thông tin thẻ Visa/Master</p>
-                    <input type="text" placeholder="Số thẻ (VD: 4123 4567 8901 2345)" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input type="text" placeholder="MM/YY" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
-                      <input type="text" placeholder="CVV" className="w-full bg-white border border-zinc-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold" />
-                    </div>
+                    <p className="text-sm font-bold text-blue-700 mb-2">Thanh toán an toàn qua cổng VNPAY</p>
+                    <input type="text" placeholder="Số thẻ ATM (VD: 9704...)" className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" />
+                    <input type="password" placeholder="Mật khẩu / Mã PIN" className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" />
                   </div>
                 )}
                 {paymentMethod === 'momo' && (
@@ -352,14 +351,65 @@ export default function Checkout() {
                 </div>
               </div>
               
-              <button 
-                onClick={handleCheckout}
-                disabled={loading}
-                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
-              >
-                {loading ? "Đang xử lý..." : "Xác nhận & Thanh toán"}
-                {!loading && <CheckCircle size={20} weight="bold" />}
-              </button>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={handleCheckout}
+                  disabled={loading}
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {loading ? "Đang xử lý..." : "Xác nhận & Thanh toán"}
+                  {!loading && <CheckCircle size={20} weight="bold" />}
+                </button>
+                
+                <button 
+                  onClick={async () => {
+                    const isAnyPassengerEmpty = passengers.some(p => !p.name || !p.identity_number);
+                    if (isAnyPassengerEmpty) {
+                      alert("Vui lòng nhập đầy đủ Họ tên và Số CCCD/Passport cho tất cả hành khách.");
+                      return;
+                    }
+
+                    const token = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+                    if (!token) return navigate("/login");
+                    setLoading(true);
+                    try {
+                      const flightId = flights[0].id;
+                      const checkoutPayload = {
+                        flight_id: flightId,
+                        return_flight_id: flights.length > 1 ? flights[1].id : null,
+                        service_ids: services.map(s => s.id),
+                        passengers: passengers.map((p, index) => ({
+                          name: p.name,
+                          identity_number: p.identity_number,
+                          outbound_seat_id: selectedSeats.outbound[index]?.id,
+                          return_seat_id: selectedSeats.return?.[index]?.id || null
+                        }))
+                      };
+                      const res = await fetch(`http://127.0.0.1:8000/api/bookings`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${token}` },
+                        body: JSON.stringify(checkoutPayload)
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.status === "success") {
+                        alert("Đã giữ chỗ thành công! Vui lòng thanh toán trong thời gian quy định.");
+                        localStorage.removeItem("selected_flights"); localStorage.removeItem("selected_services"); localStorage.removeItem("selected_seats");
+                        navigate("/my-bookings");
+                      } else {
+                        alert("Lỗi đặt vé: " + (data.message || "Vui lòng thử lại."));
+                      }
+                    } catch (e) {
+                      alert("Lỗi kết nối.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  Đặt giữ chỗ (Thanh toán sau)
+                </button>
+              </div>
 
               <p className="mt-6 text-xs text-center text-zinc-400 font-medium leading-relaxed">
                 Bằng việc nhấp vào thanh toán, bạn đồng ý với các Điều khoản & Điều kiện của Skylink.

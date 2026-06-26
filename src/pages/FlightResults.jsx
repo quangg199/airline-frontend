@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AirplaneLanding, MagnifyingGlass } from "@phosphor-icons/react";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
@@ -8,6 +8,7 @@ import FlightCard from "../components/flight/FlightCard";
 import FlightFilterSidebar from "../components/flight/FlightFilterSidebar";
 import BackButton from "../components/BackButton";
 import Navbar from "../components/Navbar";
+import RescheduleModal from "../components/RescheduleModal";
 
 /**
  * FlightResults Smart Component (Container)
@@ -28,16 +29,44 @@ export default function FlightResults() {
   const [discountApplied, setDiscountApplied] = useState(null);
   const [bookingStage, setBookingStage] = useState('outbound');
   const [outboundFlight, setOutboundFlight] = useState(null);
+  
+  // Reschedule mode states
+  const [rescheduleMode, setRescheduleMode] = useState(false);
+  const [rescheduleBooking, setRescheduleBooking] = useState(null);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleData, setRescheduleData] = useState(null);
+  const [selectedNewFlight, setSelectedNewFlight] = useState(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Kiểm tra nếu đang ở mode đổi chuyến
+    if (location.state?.rescheduleBooking) {
+      setRescheduleMode(true);
+      setRescheduleBooking(location.state.rescheduleBooking);
+      
+      // Load chuyến bay cùng route để khách chọn
+      const booking = location.state.rescheduleBooking;
+      const flight = booking.flight;
+      
+      const params = {
+        departure: flight.departure_airport?.code,
+        arrival: flight.arrival_airport?.code,
+        date: flight.departure_time ? new Date(flight.departure_time).toISOString().slice(0,10) : undefined,
+        tripType: 'one_way'
+      };
+      setSearchParams(params);
+      fetchFlights(params);
+      return;
+    }
+
     // Đọc tiêu chí tìm kiếm từ localStorage (được lưu bởi HomePage)
     const stored = localStorage.getItem("search_params");
     const parsed = stored ? JSON.parse(stored) : null;
     setSearchParams(parsed);
     fetchFlights(parsed);
-  }, []);
+  }, [location]);
 
   const fetchFlights = async (params) => {
     setLoading(true);
@@ -76,6 +105,14 @@ export default function FlightResults() {
   };
 
   const handleSelectFlight = (flight) => {
+    // Nếu ở mode đổi chuyến
+    if (rescheduleMode && rescheduleBooking) {
+      setSelectedNewFlight(flight);
+      // Tính phí đổi chuyến từ backend
+      calculateReschedulefee(flight);
+      return;
+    }
+
     if (searchParams?.tripType === 'round-trip' && bookingStage === 'outbound') {
       // Đã chọn xong chiều đi, chuyển sang chiều về
       setOutboundFlight(flight);
@@ -100,6 +137,74 @@ export default function FlightResults() {
       }
       localStorage.removeItem('selected_flight'); // dọn dẹp biến cũ
       navigate('/seat-selection'); 
+    }
+  };
+
+  const calculateReschedulefee = async (newFlight) => {
+    try {
+      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+      const res = await axios.post(
+        `http://127.0.0.1:8000/api/bookings/${rescheduleBooking.id}/reschedule`,
+        { new_flight_id: newFlight.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.status === 'success') {
+        setRescheduleData({
+          oldBooking: rescheduleBooking,
+          newFlight: newFlight,
+          reschedule_fee: res.data.data.reschedule_fee,
+          original_amount: res.data.data.original_amount,
+        });
+        setShowRescheduleModal(true);
+      }
+    } catch (err) {
+      alert('Lỗi: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleRescheduleConfirm = async () => {
+    try {
+      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+
+      // Tính toán số tiền cần thanh toán (backend đã trả về chính xác số tiền ở trường reschedule_fee)
+      const paymentAmount = rescheduleData.reschedule_fee;
+
+      if (paymentAmount > 0) {
+        // Cần thanh toán thêm
+        localStorage.setItem('reschedule_payment_data', JSON.stringify({
+          bookingId: rescheduleData.oldBooking.id,
+          newFlightId: rescheduleData.newFlight.id,
+          amount: paymentAmount,
+          type: 'reschedule'
+        }));
+        navigate('/payment', { 
+          state: { 
+            amount: paymentAmount,
+            bookingId: rescheduleData.oldBooking.id,
+            newFlightId: rescheduleData.newFlight.id,
+            type: 'reschedule'
+          } 
+        });
+      } else {
+        // Hoàn tiền hoặc không mất phí, gọi thẳng API thanh toán để nó tự xác nhận đổi vé
+        const res = await axios.post(
+          `http://127.0.0.1:8000/api/bookings/${rescheduleData.oldBooking.id}/pay-reschedule`,
+          { 
+            new_flight_id: rescheduleData.newFlight.id,
+            payment_method: 'vnpay' // Mặc định vì số tiền = 0
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (res.data.status === 'success') {
+          alert(`Đổi chuyến bay thành công!`);
+          navigate('/my-bookings');
+        }
+      }
+    } catch (err) {
+      alert('Lỗi: ' + (err.response?.data?.message || err.message));
+      setShowRescheduleModal(false);
     }
   };
 
@@ -207,6 +312,14 @@ export default function FlightResults() {
         </div>
 
       </main>
+
+      {/* Reschedule Modal */}
+      <RescheduleModal
+        isOpen={showRescheduleModal}
+        data={rescheduleData}
+        onClose={() => setShowRescheduleModal(false)}
+        onConfirm={handleRescheduleConfirm}
+      />
     </motion.div>
   );
 }

@@ -118,41 +118,36 @@ const STATUS_TEXT = {
   cancelled: "✕ Đã hủy",
 };
 
-// ─── CountdownTimer ───────────────────────────────────────────────────────────
-
-function CountdownTimer({ createdAt, onExpire }) {
-  const [secondsLeft, setSecondsLeft] = useState(null);
-
-  useEffect(() => {
-    const calc = () => {
-      const dateStr = createdAt.endsWith("Z") ? createdAt : createdAt + "Z";
-      const diff = new Date(dateStr).getTime() + 5 * 60 * 1000 - Date.now();
-      if (diff <= 0) { setSecondsLeft(0); onExpire?.(); }
-      else setSecondsLeft(Math.ceil(diff / 1000));
-    };
-    calc();
-    const t = setInterval(calc, 1000);
-    return () => clearInterval(t);
-  }, [createdAt, onExpire]);
-
-  if (!secondsLeft || secondsLeft <= 0) return null;
-  const m = Math.floor(secondsLeft / 60);
-  const s = secondsLeft % 60;
-
-  return (
-    <span className="inline-flex items-center gap-1 text-amber-600 font-bold text-xs animate-pulse mt-1">
-      <Clock size={13} /> Hủy sau {m}:{String(s).padStart(2, "0")}
-    </span>
-  );
-}
+import CountdownTimer from "../components/CountdownTimer";
 
 // ─── BookingCard ──────────────────────────────────────────────────────────────
 
 function BookingCard({ booking, idx }) {
   const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
   const flight = booking.flight;
   const airline = getAirline(flight?.flight_number ?? "");
   const status = booking.status;
+
+  const getCheckInStatus = () => {
+    if (!flight || status !== "paid") {
+      return { isOpen: false, label: "Làm thủ tục (Check-in)" };
+    }
+    const depTime = new Date(flight.departure_time).getTime();
+    const now = new Date().getTime();
+    const checkInOpenTime = depTime - 24 * 60 * 60 * 1000;
+    const checkInCloseTime = depTime - 2 * 60 * 60 * 1000;
+
+    if (now < checkInOpenTime) {
+      return { isOpen: false, label: "Làm thủ tục (Chưa mở)" };
+    } else if (now > checkInCloseTime) {
+      return { isOpen: false, label: "Làm thủ tục (Đã đóng)" };
+    } else {
+      return { isOpen: true, label: "Làm thủ tục (Check-in)" };
+    }
+  };
+
+  const checkInStatus = getCheckInStatus();
 
   return (
     <motion.div
@@ -191,9 +186,9 @@ function BookingCard({ booking, idx }) {
             <span className={`inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${STATUS_STYLE[status] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
               {STATUS_TEXT[status] ?? status}
             </span>
-            {status === "pending" && (
+            {status === "pending" && booking.expires_at && (
               <CountdownTimer
-                createdAt={booking.created_at}
+                expiresAt={booking.expires_at}
                 onExpire={() => window.location.reload()}
               />
             )}
@@ -356,11 +351,80 @@ function BookingCard({ booking, idx }) {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => {/* navigate to payment */}}
+            onClick={() => navigate(`/payment-retry/${booking.id}`, { state: { booking } })}
             className={`mt-4 w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r ${airline.accent} shadow-md cursor-pointer`}
           >
             Thanh toán ngay
           </motion.button>
+        )}
+
+        {/* ── Check-in button for paid bookings ── */}
+        {status === "paid" && (
+          <div className="flex flex-col w-full">
+            <motion.button
+              whileHover={checkInStatus.isOpen ? { scale: 1.01 } : {}}
+              whileTap={checkInStatus.isOpen ? { scale: 0.98 } : {}}
+              disabled={!checkInStatus.isOpen}
+              onClick={() => navigate(`/check-in?pnr=${booking.pnr_code}`)}
+              className={`mt-4 w-full py-3 rounded-2xl text-sm font-black text-center transition-all ${
+                checkInStatus.isOpen
+                  ? `text-white bg-gradient-to-r ${airline.accent} shadow-md cursor-pointer hover:shadow-lg`
+                  : "bg-zinc-100 border border-zinc-200 text-zinc-400 cursor-not-allowed shadow-none"
+              }`}
+            >
+              {checkInStatus.label}
+            </motion.button>
+            {!checkInStatus.isOpen && (
+              <p className="text-[10px] text-zinc-400 text-center mt-1.5 font-medium">
+                * Check-in online mở từ 24 giờ đến 2 giờ trước giờ cất cánh
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Self-service: Reschedule / Cancel (only if flight hasn't departed) ── */}
+        {new Date() < new Date(flight?.departure_time) && status !== "cancelled" && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                // Navigate to search page with booking state for rescheduling flow
+                navigate('/search', { state: { rescheduleBooking: booking } });
+              }}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-yellow-500 to-amber-500 shadow-md cursor-pointer"
+            >
+              Đổi chuyến bay
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={async () => {
+                if (!confirm('Bạn có chắc muốn hủy vé này?')) return;
+                try {
+                  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+                  const res = await fetch(`http://127.0.0.1:8000/api/bookings/${booking.id}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (res.ok && data.status === 'success') {
+                    alert(data.message || 'Hủy vé thành công');
+                    window.location.reload();
+                  } else {
+                    alert(data.message || 'Không thể hủy vé: ' + (data.errors ? JSON.stringify(data.errors) : ''));
+                  }
+                } catch (err) {
+                  console.error(err);
+                  alert('Lỗi khi kết nối tới máy chủ.');
+                }
+              }}
+              className="w-full py-3 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-red-500 to-rose-500 shadow-md cursor-pointer"
+            >
+              Hủy vé
+            </motion.button>
+          </div>
         )}
       </div>
     </motion.div>

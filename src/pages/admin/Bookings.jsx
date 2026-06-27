@@ -7,13 +7,14 @@ function Bookings() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  // ========================
-  // GET ALL (ADMIN API)
-  // ========================
   const fetchBookings = async () => {
     setLoading(true);
 
@@ -35,9 +36,6 @@ function Bookings() {
     }
   };
 
-  // ========================
-  // DELETE (ADMIN API)
-  // ========================
   const deleteBooking = async (id) => {
     const confirmDelete = window.confirm("Delete this booking?");
     if (!confirmDelete) return;
@@ -57,24 +55,53 @@ function Bookings() {
     }
   };
 
-  // ========================
-  // FILTER
-  // ========================
+  // ================= FILTER =================
   const filteredBookings = bookings.filter((b) => {
     const keyword = search.toLowerCase();
 
-    const passengerName =
-      b.tickets?.[0]?.passenger_name?.toLowerCase() || "";
+    const passenger =
+      (b.passenger ||
+        b.user?.name ||
+        b.tickets?.[0]?.passenger_name ||
+        "")
+        .toLowerCase();
 
-    const flightId =
-      b.flight?.id?.toString().toLowerCase() || "";
+    const flight =
+      (b.flight?.flight_code ||
+        b.flight?.code ||
+        b.flight?.flight_number ||
+        b.flight?.id?.toString() ||
+        "")
+        .toLowerCase();
 
-    return passengerName.includes(keyword) || flightId.includes(keyword);
+    const route =
+      `${b.flight?.from || b.flight?.departureAirport?.city || ""} ${
+        b.flight?.to || b.flight?.arrivalAirport?.city || ""
+      }`.toLowerCase();
+
+    const price =
+      (b.total_price || b.price || "").toString().toLowerCase();
+
+    return (
+      passenger.includes(keyword) ||
+      flight.includes(keyword) ||
+      route.includes(keyword) ||
+      price.includes(keyword)
+    );
   });
 
-  // ========================
-  // STATUS COLOR
-  // ========================
+  // ================= PAGINATION =================
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentBookings = filteredBookings.slice(indexOfFirst, indexOfLast);
+
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+
+  const changePage = (page) => {
+    setCurrentPage(page);
+  };
+
+  // ================= STATUS COLOR =================
   const getStatusColor = (status) => {
     switch (status) {
       case "paid":
@@ -106,7 +133,10 @@ function Bookings() {
           type="text"
           placeholder="Search passenger or flight ID..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1); // reset page khi search
+          }}
         />
       </Form>
 
@@ -114,7 +144,7 @@ function Bookings() {
       <Table striped bordered hover responsive>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>#</th>
             <th>Passenger</th>
             <th>Flight</th>
             <th>Status</th>
@@ -123,17 +153,23 @@ function Bookings() {
         </thead>
 
         <tbody>
-          {filteredBookings.length > 0 ? (
-            filteredBookings.map((b) => (
+          {currentBookings.length > 0 ? (
+            currentBookings.map((b, index) => (
               <tr key={b.id}>
-                <td>{b.id}</td>
+                <td>{indexOfFirst + index + 1}</td>
 
                 <td>
-                  {b.tickets?.[0]?.passenger_name || "N/A"}
+                  {b.passenger ||
+                    b.user?.name ||
+                    b.tickets?.[0]?.passenger_name ||
+                    "Unknown"}
                 </td>
 
                 <td>
-                  Flight #{b.flight?.id || "N/A"}
+                  {b.flight?.flight_code ||
+                    b.flight?.code ||
+                    b.flight?.flight_number ||
+                    `#${b.flight?.id || "N/A"}`}
                 </td>
 
                 <td>
@@ -171,6 +207,43 @@ function Bookings() {
           )}
         </tbody>
       </Table>
+
+      {/* PAGINATION UI */}
+      <div className="d-flex justify-content-end mt-3">
+      <div
+        className="d-flex align-items-center gap-2 px-2 py-1"
+        style={{
+          border: "1px solid #ddd",
+          borderRadius: "6px",
+          fontSize: "13px",
+          background: "#fff",
+        }}
+      >
+    <Button
+      size="sm"
+      variant="light"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(currentPage - 1)}
+      style={{ padding: "2px 8px", fontSize: "12px" }}
+    >
+      ‹
+    </Button>
+
+    <span style={{ minWidth: "60px", textAlign: "center" }}>
+      {currentPage} / {totalPages || 1}
+    </span>
+
+    <Button
+      size="sm"
+      variant="light"
+      disabled={currentPage === totalPages || totalPages === 0}
+      onClick={() => setCurrentPage(currentPage + 1)}
+      style={{ padding: "2px 8px", fontSize: "12px" }}
+    >
+      ›
+    </Button>
+  </div>
+</div>
     </div>
   );
 }

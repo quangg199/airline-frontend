@@ -13,15 +13,16 @@ function Airports() {
 
   const [saving, setSaving] = useState(false);
 
+  // ================= PAGINATION =================
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [form, setForm] = useState({
     name: "",
     city: "",
     code: "",
   });
 
-  // =====================
-  // FETCH DATA
-  // =====================
   useEffect(() => {
     fetchAirports();
   }, []);
@@ -30,9 +31,7 @@ function Airports() {
     setLoading(true);
 
     try {
-      const res = await api.get("/airports");
-
-      console.log("API RESPONSE:", res.data);
+      const res = await api.get("/admin/airports");
 
       const data = Array.isArray(res.data)
         ? res.data
@@ -40,25 +39,21 @@ function Airports() {
 
       setAirports(data);
     } catch (err) {
-      console.log("API ERROR:", err.response || err);
+      console.log(err);
       setAirports([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================
-  // ADD
-  // =====================
+  // ================= ADD =================
   const handleAdd = () => {
     setEditId(null);
     setForm({ name: "", city: "", code: "" });
     setShow(true);
   };
 
-  // =====================
-  // EDIT
-  // =====================
+  // ================= EDIT =================
   const handleEdit = (airport) => {
     setEditId(airport.id);
     setForm({
@@ -69,51 +64,54 @@ function Airports() {
     setShow(true);
   };
 
-  // =====================
-  // SAVE (CREATE / UPDATE)
-  // =====================
+  // ================= SAVE =================
   const handleSave = async () => {
     setSaving(true);
 
     try {
+      const token = localStorage.getItem("access_token");
+
       if (editId) {
-        await api.put(`/airports/${editId}`, form);
+        await api.put(`/admin/airports/${editId}`, form, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await api.post("/airports", form);
+        await api.post("/admin/airports", form, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
       setShow(false);
       fetchAirports();
     } catch (err) {
-      console.log("SAVE ERROR:", err.response || err);
+      console.log(err);
+      alert("Save failed");
     } finally {
       setSaving(false);
     }
   };
 
-  // =====================
-  // DELETE
-  // =====================
+  // ================= DELETE =================
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Delete this airport?");
-    if (!confirmDelete) return;
+    if (!window.confirm("Delete this airport?")) return;
 
     try {
-      await api.delete(`/airports/${id}`);
+      const token = localStorage.getItem("access_token");
 
-      setAirports((prev) => prev.filter((a) => a.id !== id));
+      await api.delete(`/admin/airports/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      fetchAirports();
     } catch (err) {
-      console.log("DELETE ERROR:", err.response || err);
-
-      setAirports((prev) => prev.filter((a) => a.id !== id));
+      console.log(err);
+      alert("Delete failed");
     }
   };
 
-  // =====================
-  // FILTER
-  // =====================
+  // ================= FILTER =================
   const filteredAirports = airports.filter((a) => {
-    const keyword = search.toLowerCase();
+    const keyword = search.toLowerCase().trim();
 
     return (
       (a.name || "").toLowerCase().includes(keyword) ||
@@ -122,9 +120,23 @@ function Airports() {
     );
   });
 
-  // =====================
-  // LOADING UI
-  // =====================
+  // ================= PAGINATION FIX (QUAN TRỌNG) =================
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAirports.length / itemsPerPage)
+  );
+
+  const currentPageSafe = Math.min(currentPage, totalPages);
+
+  const indexOfFirst = (currentPageSafe - 1) * itemsPerPage;
+  const indexOfLast = indexOfFirst + itemsPerPage;
+
+  const currentAirports = filteredAirports.slice(
+    indexOfFirst,
+    indexOfLast
+  );
+
+  // ================= LOADING =================
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -133,9 +145,6 @@ function Airports() {
     );
   }
 
-  // =====================
-  // UI
-  // =====================
   return (
     <div className="container mt-4">
       <h2 className="mb-3">Airports Management</h2>
@@ -146,7 +155,10 @@ function Airports() {
           type="text"
           placeholder="Search airport..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
         />
 
         <Button onClick={handleAdd}>+ Add Airport</Button>
@@ -156,7 +168,7 @@ function Airports() {
       <Table bordered hover>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>STT</th>
             <th>Name</th>
             <th>City</th>
             <th>Code</th>
@@ -165,12 +177,15 @@ function Airports() {
         </thead>
 
         <tbody>
-          {filteredAirports.length > 0 ? (
-            filteredAirports.map((a) => (
+          {currentAirports.length > 0 ? (
+            currentAirports.map((a, index) => (
               <tr key={a.id}>
-                <td>{a.id}</td>
+                <td>{indexOfFirst + index + 1}</td>
+
                 <td>{a.name}</td>
+
                 <td>{a.city}</td>
+
                 <td>
                   <span
                     style={{
@@ -185,10 +200,15 @@ function Airports() {
                   </span>
                 </td>
 
-                <td>
-                  <Button size="sm" onClick={() => handleEdit(a)}>
+                <td className="d-flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={() => handleEdit(a)}
+                  >
                     Edit
-                  </Button>{" "}
+                  </Button>
+
                   <Button
                     size="sm"
                     variant="danger"
@@ -208,6 +228,37 @@ function Airports() {
           )}
         </tbody>
       </Table>
+
+      {/* PAGINATION */}
+      <div className="d-flex justify-content-end mt-3">
+        <div className="d-flex align-items-center gap-2">
+
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            disabled={currentPageSafe === 1}
+            onClick={() => setCurrentPage(currentPageSafe - 1)}
+          >
+            ‹
+          </Button>
+
+          <span style={{ fontSize: "13px" }}>
+            {currentPageSafe} / {totalPages}
+          </span>
+
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            disabled={
+              currentPageSafe === totalPages || totalPages === 0
+            }
+            onClick={() => setCurrentPage(currentPageSafe + 1)}
+          >
+            ›
+          </Button>
+
+        </div>
+      </div>
 
       {/* MODAL */}
       <Modal show={show} onHide={() => setShow(false)}>
@@ -239,7 +290,7 @@ function Airports() {
 
             <Form.Control
               className="mb-2"
-              placeholder="Code (e.g. HAN)"
+              placeholder="Code"
               value={form.code}
               onChange={(e) =>
                 setForm({ ...form, code: e.target.value })

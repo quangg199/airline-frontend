@@ -12,28 +12,38 @@ function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/profile");
+      const response = await api.get("/admin/profile");
 
-      setUser(response.data);
+      // 🔥 FIX QUAN TRỌNG (Laravel thường trả { data: user })
+      const data = response.data?.data || response.data;
+
+      setUser(data);
     } catch (error) {
-      console.log("API chưa sẵn sàng");
+      console.log("Profile API error:", error.response?.data || error.message);
 
-      // Mock data khi backend chưa xong
-      setUser({
-        id: 1,
-        name: "Admin SkyLink",
-        email: "admin@skylink.com",
-        role: "Admin",
-        membership_tier: "Gold",
-      });
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <Spinner animation="border" />;
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <Spinner animation="border" />
+      </div>
+    );
   }
+
+  if (!user) {
+    return (
+      <div className="container mt-4">
+        <h4>Không tải được thông tin user</h4>
+      </div>
+    );
+  }
+
+  const roleName = user.roles?.[0]?.name || "N/A";
 
   return (
     <div className="container mt-4">
@@ -44,7 +54,7 @@ function Profile() {
           <p><strong>ID:</strong> {user.id}</p>
           <p><strong>Name:</strong> {user.name}</p>
           <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Role:</strong> {user.role}</p>
+          <p><strong>Role:</strong> {roleName}</p>
           <p><strong>Membership:</strong> {user.membership_tier}</p>
         </Card.Body>
       </Card>

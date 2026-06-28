@@ -7,82 +7,111 @@ function Bookings() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  // GET ALL
   const fetchBookings = async () => {
     setLoading(true);
 
     try {
-      const response = await api.get("/bookings.php");
-      setBookings(response.data || []);
-    } catch (error) {
-      console.log("API chưa có → dùng mock data");
+      const token = localStorage.getItem("access_token");
 
-      setBookings([
-        {
-          id: 1,
-          customerName: "Nguyen Van A",
-          flightCode: "VN123",
-          status: "confirmed",
+      const response = await api.get("/admin/bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          id: 2,
-          customerName: "Tran Thi B",
-          flightCode: "VJ456",
-          status: "pending",
-        },
-        {
-          id: 3,
-          customerName: "Le Van C",
-          flightCode: "QH789",
-          status: "cancelled",
-        },
-      ]);
+      });
+
+      setBookings(response.data.data || []);
+    } catch (error) {
+      console.log("API error:", error);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // DELETE (mock + ready API)
   const deleteBooking = async (id) => {
     const confirmDelete = window.confirm("Delete this booking?");
     if (!confirmDelete) return;
 
     try {
-      await api.delete(`/bookings.php?id=${id}`);
+      const token = localStorage.getItem("access_token");
+
+      await api.delete(`/admin/bookings/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setBookings((prev) => prev.filter((b) => b.id !== id));
     } catch (error) {
-      console.log("Delete failed (mock mode)");
-
-      setBookings((prev) => prev.filter((b) => b.id !== id));
+      console.log("Delete error:", error);
     }
   };
 
-  // SAFE FILTER
+  // ================= FILTER =================
   const filteredBookings = bookings.filter((b) => {
     const keyword = search.toLowerCase();
 
+    const passenger =
+      (b.passenger ||
+        b.user?.name ||
+        b.tickets?.[0]?.passenger_name ||
+        "")
+        .toLowerCase();
+
+    const flight =
+      (b.flight?.flight_code ||
+        b.flight?.code ||
+        b.flight?.flight_number ||
+        b.flight?.id?.toString() ||
+        "")
+        .toLowerCase();
+
+    const route =
+      `${b.flight?.from || b.flight?.departureAirport?.city || ""} ${
+        b.flight?.to || b.flight?.arrivalAirport?.city || ""
+      }`.toLowerCase();
+
+    const price =
+      (b.total_price || b.price || "").toString().toLowerCase();
+
     return (
-      (b.customerName || "").toLowerCase().includes(keyword) ||
-      (b.flightCode || "").toLowerCase().includes(keyword)
+      passenger.includes(keyword) ||
+      flight.includes(keyword) ||
+      route.includes(keyword) ||
+      price.includes(keyword)
     );
   });
 
-  // STATUS COLOR
+  // ================= PAGINATION =================
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentBookings = filteredBookings.slice(indexOfFirst, indexOfLast);
+
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+
+  const changePage = (page) => {
+    setCurrentPage(page);
+  };
+
+  // ================= STATUS COLOR =================
   const getStatusColor = (status) => {
     switch (status) {
-      case "confirmed":
-        return "green";
+      case "paid":
+        return "#28a745";
       case "pending":
-        return "orange";
+        return "#fd7e14";
       case "cancelled":
-        return "red";
+        return "#dc3545";
       default:
-        return "gray";
+        return "#6c757d";
     }
   };
 
@@ -96,15 +125,18 @@ function Bookings() {
 
   return (
     <div className="container mt-4">
-      <h2 className="mb-3">Bookings Management</h2>
+      <h2 className="mb-3">Admin Bookings Management</h2>
 
       {/* SEARCH */}
       <Form className="mb-3">
         <Form.Control
           type="text"
-          placeholder="Search customer or flight code..."
+          placeholder="Search passenger or flight ID..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1); // reset page khi search
+          }}
         />
       </Form>
 
@@ -112,8 +144,8 @@ function Bookings() {
       <Table striped bordered hover responsive>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Customer</th>
+            <th>#</th>
+            <th>Passenger</th>
             <th>Flight</th>
             <th>Status</th>
             <th>Action</th>
@@ -121,12 +153,24 @@ function Bookings() {
         </thead>
 
         <tbody>
-          {filteredBookings.length > 0 ? (
-            filteredBookings.map((b) => (
+          {currentBookings.length > 0 ? (
+            currentBookings.map((b, index) => (
               <tr key={b.id}>
-                <td>{b.id}</td>
-                <td>{b.customerName}</td>
-                <td>{b.flightCode}</td>
+                <td>{indexOfFirst + index + 1}</td>
+
+                <td>
+                  {b.passenger ||
+                    b.user?.name ||
+                    b.tickets?.[0]?.passenger_name ||
+                    "Unknown"}
+                </td>
+
+                <td>
+                  {b.flight?.flight_code ||
+                    b.flight?.code ||
+                    b.flight?.flight_number ||
+                    `#${b.flight?.id || "N/A"}`}
+                </td>
 
                 <td>
                   <span
@@ -136,6 +180,7 @@ function Bookings() {
                       color: "white",
                       background: getStatusColor(b.status),
                       fontSize: "12px",
+                      textTransform: "capitalize",
                     }}
                   >
                     {b.status}
@@ -162,6 +207,43 @@ function Bookings() {
           )}
         </tbody>
       </Table>
+
+      {/* PAGINATION UI */}
+      <div className="d-flex justify-content-end mt-3">
+      <div
+        className="d-flex align-items-center gap-2 px-2 py-1"
+        style={{
+          border: "1px solid #ddd",
+          borderRadius: "6px",
+          fontSize: "13px",
+          background: "#fff",
+        }}
+      >
+    <Button
+      size="sm"
+      variant="light"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(currentPage - 1)}
+      style={{ padding: "2px 8px", fontSize: "12px" }}
+    >
+      ‹
+    </Button>
+
+    <span style={{ minWidth: "60px", textAlign: "center" }}>
+      {currentPage} / {totalPages || 1}
+    </span>
+
+    <Button
+      size="sm"
+      variant="light"
+      disabled={currentPage === totalPages || totalPages === 0}
+      onClick={() => setCurrentPage(currentPage + 1)}
+      style={{ padding: "2px 8px", fontSize: "12px" }}
+    >
+      ›
+    </Button>
+  </div>
+</div>
     </div>
   );
 }

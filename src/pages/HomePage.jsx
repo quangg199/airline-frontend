@@ -71,10 +71,13 @@ export default function HomePage() {
       arrival: prev.departure
     }));
   };
-
+// Fetch airports data on component mount
   useEffect(() => {
     axios.get("http://127.0.0.1:8000/api/airports")
-      .then(res => setAirports(res.data.data || []))
+      .then(res => {
+        console.log("API Airports:", res.data);
+        setAirports(res.data);
+      })
       .catch(console.error);
   }, []);
 

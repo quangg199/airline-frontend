@@ -6,9 +6,7 @@ function Sidebar() {
   const menu = [
     {
       group: "MAIN",
-      items: [
-        { path: "/admin", label: "Dashboard", icon: "tachometer-alt" },
-      ],
+      items: [{ path: "/admin", label: "Dashboard", icon: "tachometer-alt" }],
     },
     {
       group: "MANAGEMENT",
@@ -21,59 +19,66 @@ function Sidebar() {
     },
   ];
 
-  const isActive = (path) => {
-    if (path === "/admin") return location.pathname === "/admin";
-    return location.pathname.startsWith(path);
-  };
+  const isActive = (path) =>
+    path === "/admin"
+      ? location.pathname === "/admin"
+      : location.pathname.startsWith(path);
 
   return (
     <aside
       style={{
-        width: "270px",
-        minHeight: "120vh",
-        background: "#111827",
+        width: "280px",
+        height: "100vh",
+        background: "linear-gradient(180deg, #0f172a, #111827)",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
-        boxShadow: "4px 0 20px rgba(0,0,0,0.15)",
       }}
     >
       {/* LOGO */}
-      <div
+      <Link
+        to="/admin"
         style={{
-          padding: "24px",
+          padding: "22px",
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
+          textDecoration: "none",
         }}
       >
-        <h4
+        <img
+          src="/logo.jpg"
+          alt="logo"
           style={{
-            margin: 0,
-            fontWeight: "800",
-            color: "#fff",
+            width: "70px",
+            height: "70px",
+            borderRadius: "10px",
+            objectFit: "cover",
+            background: "#fff",
+            padding: "4px",
           }}
-        >
-          ✈ SkyLink
-        </h4>
+        />
 
-        <small
-          style={{
-            color: "#94a3b8",
-          }}
-        >
-          Airline Admin Panel
-        </small>
-      </div>
+        <div>
+          <div style={{ fontSize: "18px", fontWeight: "800", color: "#fff" }}>
+            SkyLink
+          </div>
+          <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+            Airline Admin Panel
+          </div>
+        </div>
+      </Link>
 
       {/* MENU */}
-      <nav style={{ flex: 1, paddingTop: "15px" }}>
-        {menu.map((section, index) => (
-          <div key={index}>
+      <div style={{ flex: 1, paddingTop: "12px" }}>
+        {menu.map((section, i) => (
+          <div key={i} style={{ marginBottom: "18px" }}>
             <div
               style={{
-                color: "#64748b",
+                padding: "10px 22px",
                 fontSize: "11px",
-                fontWeight: "700",
-                padding: "12px 24px",
+                color: "#64748b",
                 letterSpacing: "1px",
               }}
             >
@@ -91,71 +96,48 @@ function Sidebar() {
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    margin: "6px 12px",
-                    padding: "12px 16px",
-                    borderRadius: "12px",
+                    padding: "12px 18px",
+                    margin: "4px 12px",
+                    borderRadius: "10px",
                     textDecoration: "none",
-
+                    transition: "0.2s",
                     background: active
                       ? "linear-gradient(135deg,#2563eb,#3b82f6)"
                       : "transparent",
-
                     color: active ? "#fff" : "#cbd5e1",
-
-                    boxShadow: active
-                      ? "0 8px 20px rgba(37,99,235,0.35)"
-                      : "none",
-
-                    transition: "0.25s ease",
                   }}
                 >
-                  <i
-                    className={`fas fa-${item.icon}`}
-                    style={{
-                      width: "20px",
-                      textAlign: "center",
-                    }}
-                  />
-
+                  <i className={`fas fa-${item.icon}`} />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
           </div>
         ))}
-      </nav>
+      </div>
 
       {/* USER CARD */}
       <div
         style={{
-          margin: "15px",
-          padding: "15px",
-          borderRadius: "14px",
+          margin: "14px",
+          padding: "14px",
+          borderRadius: "12px",
           background: "#1e293b",
         }}
       >
-        <div
-          style={{
-            fontWeight: "600",
-            marginBottom: "4px",
-          }}
-        >
-          Administrator
+        <div style={{ fontWeight: "600" }}>Administrator</div>
+        <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+          System Control Panel
         </div>
-
-        <small style={{ color: "#94a3b8" }}>
-          SkyLink Airline System
-        </small>
       </div>
 
       {/* FOOTER */}
       <div
         style={{
-          padding: "15px 20px",
           textAlign: "center",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
-          color: "#64748b",
+          padding: "12px",
           fontSize: "12px",
+          color: "#64748b",
         }}
       >
         Version 1.0

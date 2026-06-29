@@ -32,6 +32,11 @@ function Dashboard() {
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentFlights, setRecentFlights] = useState([]);
 
+  const [analytics, setAnalytics] = useState({
+    months: [],
+    bookings: [],
+  });
+
   useEffect(() => {
     const user =
       JSON.parse(localStorage.getItem("user")) ||
@@ -56,8 +61,7 @@ function Dashboard() {
       setLoading(true);
       setError("");
 
-      const res = await api.get("/dashboard.php");
-
+      const res = await api.get("/admin/dashboard");
       const data = res.data;
 
       setStats({
@@ -69,37 +73,23 @@ function Dashboard() {
 
       setRecentBookings(data?.recentBookings ?? []);
       setRecentFlights(data?.recentFlights ?? []);
+
+      setAnalytics(data?.analytics ?? { months: [], bookings: [] });
+
     } catch (err) {
+      console.log(err);
       setError("Không tải được dữ liệu dashboard");
-
-      // fallback mock data
-      setStats({
-        totalFlights: 12,
-        totalBookings: 45,
-        totalUsers: 20,
-        revenue: 12500000,
-      });
-
-      setRecentBookings([
-        { id: 1, customer: "Nguyen Van A", flight: "VN123", amount: 2500000 },
-        { id: 2, customer: "Tran Thi B", flight: "VJ222", amount: 1800000 },
-      ]);
-
-      setRecentFlights([
-        { id: 1, code: "VN123", from: "HAN", to: "SGN", status: "Scheduled" },
-        { id: 2, code: "VJ456", from: "DAD", to: "HAN", status: "Delayed" },
-      ]);
     } finally {
       setLoading(false);
     }
   };
 
   const chartData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    labels: analytics.months,
     datasets: [
       {
         label: "Bookings",
-        data: [15, 22, 35, 28, 50, 45],
+        data: analytics.bookings,
         backgroundColor: "#0d6efd",
       },
     ],
@@ -121,44 +111,13 @@ function Dashboard() {
 
       {/* STATS */}
       <Row className="g-3">
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h6>Flights</h6>
-              <h3>{stats.totalFlights}</h3>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h6>Bookings</h6>
-              <h3>{stats.totalBookings}</h3>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h6>Users</h6>
-              <h3>{stats.totalUsers}</h3>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h6>Revenue</h6>
-              <h3>{Number(stats.revenue).toLocaleString()}</h3>
-            </Card.Body>
-          </Card>
-        </Col>
+        <Col md={3}><Card><Card.Body><h6>Flights</h6><h3>{stats.totalFlights}</h3></Card.Body></Card></Col>
+        <Col md={3}><Card><Card.Body><h6>Bookings</h6><h3>{stats.totalBookings}</h3></Card.Body></Card></Col>
+        <Col md={3}><Card><Card.Body><h6>Users</h6><h3>{stats.totalUsers}</h3></Card.Body></Card></Col>
+        <Col md={3}><Card><Card.Body><h6>Revenue</h6><h3>{Number(stats.revenue).toLocaleString()}</h3></Card.Body></Card></Col>
       </Row>
 
-      {/* CHART + STATUS */}
+      {/* CHART */}
       <Row className="mt-4">
         <Col md={8}>
           <Card>
@@ -181,7 +140,7 @@ function Dashboard() {
         </Col>
       </Row>
 
-      {/* TABLES */}
+      {/* BOOKINGS */}
       <Row className="mt-4">
         <Col md={6}>
           <Card>
@@ -192,28 +151,27 @@ function Dashboard() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Customer</th>
+                    <th>User</th>
                     <th>Flight</th>
                     <th>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentBookings.map((b) => (
-                    <tr key={b.id}>
-                      <td>{b.id}</td>
-                      <td>{b.customer}</td>
-                      <td>{b.flight}</td>
-                      <td>
-                        {Number(b.amount || 0).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {recentBookings.map((b, index) => (
+                  <tr key={b.id}>
+                    <td>{index + 1}</td>
+                    <td>{b.user?.name}</td>
+                    <td>{b.flight?.flight_number}</td>
+                    <td>{Number(b.total_amount || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
               </Table>
             </Card.Body>
           </Card>
         </Col>
 
+        {/* FLIGHTS */}
         <Col md={6}>
           <Card>
             <Card.Body>
@@ -222,7 +180,7 @@ function Dashboard() {
               <Table hover>
                 <thead>
                   <tr>
-                    <th>Code</th>
+                    <th>Flight No</th>
                     <th>From</th>
                     <th>To</th>
                     <th>Status</th>
@@ -232,9 +190,9 @@ function Dashboard() {
                 <tbody>
                   {recentFlights.map((f) => (
                     <tr key={f.id}>
-                      <td>{f.code}</td>
-                      <td>{f.from}</td>
-                      <td>{f.to}</td>
+                      <td>{f.flight_number}</td>
+                      <td>{f.departure_airport?.city}</td>
+                      <td>{f.arrival_airport?.city}</td>
                       <td>{f.status}</td>
                     </tr>
                   ))}

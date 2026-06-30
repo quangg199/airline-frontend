@@ -15,7 +15,13 @@ export default function Support() {
   const chatEndRef = useRef(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Khi trang vừa render, đảm bảo cuộn lên đầu cùng
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    // Chỉ cuộn vùng nội dung chat, sử dụng block: "nearest" để tránh kéo cả màn hình lớn xuống
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   const handleSendMessage = (e) => {

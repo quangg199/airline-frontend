@@ -14,6 +14,12 @@ import SkyClub from "./pages/SkyClub";
 import PaymentRetry from "./pages/PaymentRetry";
 import CheckInPage from "./pages/CheckInPage";
 
+import AirportTransfer from "./pages/services/AirportTransfer";
+import SpecialMeals from "./pages/services/SpecialMeals";
+import TravelInsurance from "./pages/services/TravelInsurance";
+import VisaSupport from "./pages/services/VisaSupport";
+import CorporateGifts from "./pages/services/CorporateGifts";
+
 import RequireAdmin from "./components/admin/RequireAdmin";
 
 import AdminLayout from "./layouts/AdminLayout";
@@ -38,6 +44,14 @@ function App() {
         <Route path="/search" element={<FlightResults />} />
         <Route path="/seat-selection" element={<SeatSelection />} />
         <Route path="/services" element={<ServiceSelection />} />
+        
+        {/* NEW DUMMY SERVICE PAGES */}
+        <Route path="/services/transfer" element={<AirportTransfer />} />
+        <Route path="/services/meals" element={<SpecialMeals />} />
+        <Route path="/services/insurance" element={<TravelInsurance />} />
+        <Route path="/services/visa" element={<VisaSupport />} />
+        <Route path="/services/corporate" element={<CorporateGifts />} />
+        
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/support" element={<Support />} />
         <Route path="/checkout" element={<Checkout />} />

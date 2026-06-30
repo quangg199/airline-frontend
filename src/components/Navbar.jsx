@@ -4,7 +4,6 @@ import { motion, AnimatePresence, useMotionValue, useSpring } from "motion/react
 import {
   PaperPlaneTilt,
   SignOut,
-  MagnifyingGlass,
   Bell,
   X,
   CaretDown,
@@ -31,27 +30,24 @@ const NAV_LINKS = [
     mega: true,
     sections: [
       {
-        title: "Trên máy bay",
+        title: "Trải nghiệm",
         items: [
-          { icon: Armchair, label: "Chọn chỗ ngồi", desc: "Ghế tốt nhất cho bạn", href: "/services/seats" },
-          { icon: BagSimple, label: "Hành lý thêm", desc: "Thêm kg không lo", href: "/services/baggage" },
-          { icon: Coffee, label: "Bữa ăn đặc biệt", desc: "14 loại thực đơn", href: "/services/meals" },
+          { icon: Coffee, label: "Bữa ăn đặc biệt", desc: "14 loại thực đơn tinh hoa", href: "/services/meals" },
+          { icon: Car, label: "Đưa đón sân bay", desc: "Hệ thống xe sang trọng", href: "/services/transfer" },
         ],
       },
       {
-        title: "Mặt đất",
+        title: "Tiện ích",
         items: [
-          { icon: Car, label: "Đưa đón sân bay", desc: "Xe sang, đúng giờ", href: "/services/transfer" },
-          { icon: Shield, label: "Bảo hiểm du lịch", desc: "An tâm mọi hành trình", href: "/services/insurance" },
-          { icon: Globe, label: "Visa & Hỗ trợ", desc: "Thủ tục nhanh gọn", href: "/services/visa" },
+          { icon: Shield, label: "Bảo hiểm du lịch", desc: "An tâm trọn vẹn mọi hành trình", href: "/services/insurance" },
+          { icon: Globe, label: "Visa & Hỗ trợ", desc: "Thủ tục nhanh gọn, chuẩn xác", href: "/services/visa" },
         ],
       },
       {
-        title: "Hỗ trợ",
+        title: "Khác",
         items: [
-          { icon: Headset, label: "Hotline 24/7", desc: "1900 6067", href: "/support" },
           { icon: Gift, label: "Quà tặng doanh nghiệp", desc: "Giải pháp cho công ty", href: "/services/corporate" },
-          { icon: CreditCard, label: "Phương thức thanh toán", desc: "30+ cổng thanh toán", href: "/services/payment" },
+          { icon: Headset, label: "Hotline 24/7", desc: "Hỗ trợ khách hàng: 1900 6067", href: "/support" },
         ],
       },
     ],
@@ -65,11 +61,7 @@ const NAV_LINKS = [
   },
 ];
 
-const MOCK_NOTIFICATIONS = [
-  { id: 1, title: "Chuyến bay VN-201 đã được xác nhận", time: "2 phút trước", unread: true, type: "success" },
-  { id: 2, title: "Khuyến mãi: Giảm 30% vé Hà Nội – TP.HCM", time: "1 giờ trước", unread: true, type: "promo" },
-  { id: 3, title: "Nhắc nhở: Check-in online mở lúc 18:00", time: "3 giờ trước", unread: false, type: "reminder" },
-];
+
 
 // ─── Magnetic Button Hook ─────────────────────────────────────────────────────
 
@@ -247,166 +239,6 @@ function MegaMenu({ sections }) {
         </div>
       </div>
     </motion.div>
-  );
-}
-
-// ─── Search Bar ───────────────────────────────────────────────────────────────
-
-function SearchBar() {
-  const [expanded, setExpanded] = useState(false);
-  const [query, setQuery] = useState("");
-  const inputRef = useRef(null);
-
-  const toggle = () => {
-    setExpanded((v) => !v);
-    if (!expanded) setTimeout(() => inputRef.current?.focus(), 180);
-    else setQuery("");
-  };
-
-  return (
-    <MagneticWrapper>
-      <motion.div
-        animate={{ width: expanded ? 220 : 40 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="relative flex items-center h-10 bg-zinc-100/80 rounded-full overflow-hidden border border-zinc-200/60 hover:border-zinc-300 transition-colors"
-      >
-        <motion.button
-          onClick={toggle}
-          className="absolute left-0 w-10 h-10 flex items-center justify-center z-10 text-zinc-500 hover:text-zinc-800 transition-colors cursor-pointer flex-shrink-0"
-        >
-          <AnimatePresence mode="wait">
-            {expanded ? (
-              <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <X size={16} weight="bold" />
-              </motion.span>
-            ) : (
-              <motion.span key="search" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <MagnifyingGlass size={16} weight="bold" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
-
-        <AnimatePresence>
-          {expanded && (
-            <motion.input
-              ref={inputRef}
-              key="input"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ delay: 0.1 }}
-              type="text"
-              placeholder="Tìm chuyến bay..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-10 pr-4 w-full h-full bg-transparent text-sm text-zinc-800 placeholder-zinc-400 outline-none"
-            />
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </MagneticWrapper>
-  );
-}
-
-// ─── Notification Panel ───────────────────────────────────────────────────────
-
-function NotificationButton() {
-  const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  const unreadCount = notifications.filter((n) => n.unread).length;
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const markAllRead = () => setNotifications((ns) => ns.map((n) => ({ ...n, unread: false })));
-
-  const typeColor = {
-    success: "bg-emerald-100 text-emerald-600",
-    promo: "bg-blue-100 text-blue-600",
-    reminder: "bg-amber-100 text-amber-600",
-  };
-
-  return (
-    <div className="relative" ref={panelRef}>
-      <MagneticWrapper>
-        <motion.button
-          onClick={() => setOpen((v) => !v)}
-          className="relative w-10 h-10 rounded-full bg-zinc-100/80 hover:bg-zinc-200/80 border border-zinc-200/60 flex items-center justify-center text-zinc-600 hover:text-zinc-900 transition-all cursor-pointer"
-          whileTap={{ scale: 0.92 }}
-        >
-          <Bell size={17} weight="bold" />
-          <AnimatePresence>
-            {unreadCount > 0 && (
-              <motion.span
-                key="badge"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 min-w-[18px] min-h-[18px] bg-gradient-to-br from-red-500 to-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm"
-              >
-                {unreadCount}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </MagneticWrapper>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            className="absolute right-0 top-full mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-2xl border border-zinc-200/60 shadow-2xl shadow-zinc-900/10 overflow-hidden z-50"
-          >
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-sky-400" />
-            <div className="p-4 flex items-center justify-between border-b border-zinc-100">
-              <h3 className="text-sm font-bold text-zinc-900">Thông báo</h3>
-              {unreadCount > 0 && (
-                <button onClick={markAllRead} className="text-xs text-blue-500 font-semibold hover:text-blue-700 transition-colors cursor-pointer">
-                  Đánh dấu đã đọc
-                </button>
-              )}
-            </div>
-
-            <div className="divide-y divide-zinc-50">
-              {notifications.map((n) => (
-                <motion.div
-                  key={n.id}
-                  whileHover={{ backgroundColor: "rgba(248,250,252,0.9)" }}
-                  className={`p-4 flex gap-3 cursor-pointer transition-colors ${n.unread ? "bg-blue-50/30" : ""}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${typeColor[n.type]}`}>
-                    {n.type === "success" ? "✓" : n.type === "promo" ? "%" : "!"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs leading-relaxed ${n.unread ? "font-semibold text-zinc-900" : "font-medium text-zinc-600"}`}>
-                      {n.title}
-                    </p>
-                    <p className="text-[10px] text-zinc-400 mt-1">{n.time}</p>
-                  </div>
-                  {n.unread && <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />}
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="p-3 border-t border-zinc-100">
-              <button className="w-full text-center text-xs font-semibold text-zinc-500 hover:text-blue-600 transition-colors py-1 cursor-pointer">
-                Xem tất cả thông báo
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
   );
 }
 
@@ -639,8 +471,6 @@ export default function Navbar() {
 
             {/* ── Right Section ── */}
             <div className="flex items-center gap-2">
-              <SearchBar />
-              <NotificationButton />
 
               {user ? (
                 <AvatarMenu user={user} onLogout={handleLogout} />

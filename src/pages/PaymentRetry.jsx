@@ -22,6 +22,13 @@ export default function PaymentRetry() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
+  const [paymentDetails, setPaymentDetails] = useState({
+    vnpayCard: "",
+    vnpayPin: "",
+    momoPhone: "",
+    momoPin: ""
+  });
+
   useEffect(() => {
     if (!booking && !bookingId) {
       setRedirecting(true);
@@ -41,6 +48,30 @@ export default function PaymentRetry() {
       alert("Vui lòng đăng nhập lại.");
       navigate("/login");
       return;
+    }
+
+    if (paymentMethod === 'vnpay') {
+      if (!paymentDetails.vnpayCard || !paymentDetails.vnpayPin) {
+        alert("Vui lòng nhập đầy đủ Số thẻ và Mã PIN VNPAY.");
+        return;
+      }
+      if (paymentDetails.vnpayCard.replace(/\D/g, '').length < 4) {
+        alert("Số thẻ VNPAY không hợp lệ.");
+        return;
+      }
+    } else if (paymentMethod === 'momo') {
+      if (!paymentDetails.momoPhone || !paymentDetails.momoPin) {
+        alert("Vui lòng nhập Số điện thoại và Mật khẩu MoMo.");
+        return;
+      }
+      if (paymentDetails.momoPhone.replace(/\D/g, '').length < 10) {
+        alert("Số điện thoại MoMo không hợp lệ.");
+        return;
+      }
+      if (paymentDetails.momoPin.length < 6) {
+        alert("Mật khẩu MoMo phải có ít nhất 6 ký tự.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -162,15 +193,39 @@ export default function PaymentRetry() {
             {paymentMethod === 'vnpay' && (
               <div className="space-y-4">
                 <p className="text-sm font-bold text-blue-700 mb-2">Thanh toán an toàn qua cổng VNPAY</p>
-                <input type="text" placeholder="Số thẻ ATM (VD: 9704...)" className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" />
-                <input type="password" placeholder="Mật khẩu / Mã PIN" className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" />
+                <input 
+                  type="text" 
+                  placeholder="Số thẻ ATM (VD: 9704...)" 
+                  value={paymentDetails.vnpayCard}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, vnpayCard: e.target.value})}
+                  className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" 
+                />
+                <input 
+                  type="password" 
+                  placeholder="Mật khẩu / Mã PIN" 
+                  value={paymentDetails.vnpayPin}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, vnpayPin: e.target.value})}
+                  className="w-full bg-white border border-blue-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-semibold" 
+                />
               </div>
             )}
             {paymentMethod === 'momo' && (
               <div className="space-y-4">
                 <p className="text-sm font-bold text-pink-600 mb-2">Đăng nhập ví MoMo để thanh toán</p>
-                <input type="text" placeholder="Số điện thoại MoMo" className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
-                <input type="password" placeholder="Mật khẩu MoMo (6 số)" className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+                <input 
+                  type="text" 
+                  placeholder="Số điện thoại MoMo" 
+                  value={paymentDetails.momoPhone}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, momoPhone: e.target.value})}
+                  className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" 
+                />
+                <input 
+                  type="password" 
+                  placeholder="Mật khẩu MoMo (6 số)" 
+                  value={paymentDetails.momoPin}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, momoPin: e.target.value})}
+                  className="w-full bg-white border border-pink-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 font-semibold" 
+                />
               </div>
             )}
           </div>

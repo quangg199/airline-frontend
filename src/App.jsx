@@ -13,6 +13,7 @@ import MyBookings from "./pages/MyBookings";
 import SkyClub from "./pages/SkyClub";
 import PaymentRetry from "./pages/PaymentRetry";
 import CheckInPage from "./pages/CheckInPage";
+import ProfilePage from "./pages/ProfilePage";
 
 import AirportTransfer from "./pages/services/AirportTransfer";
 import SpecialMeals from "./pages/services/SpecialMeals";
@@ -60,6 +61,7 @@ function App() {
         <Route path="/check-in" element={<CheckInPage />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/skyclub" element={<SkyClub />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<RequireAdmin />}>

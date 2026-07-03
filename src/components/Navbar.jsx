@@ -18,6 +18,7 @@ import {
   Ticket,
   Globe,
   Headset,
+  UserCircle,
 } from "@phosphor-icons/react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -301,6 +302,7 @@ function AvatarMenu({ user, onLogout }) {
 
             <div className="p-2">
               {[
+                { icon: UserCircle, label: "Hồ sơ của tôi", href: "/profile" },
                 { icon: Ticket, label: "Chuyến của tôi", href: "/my-bookings" },
                 { icon: CreditCard, label: "Thanh toán", href: "/payment" },
                 { icon: Star, label: "SkyClub", href: "/skyclub" },

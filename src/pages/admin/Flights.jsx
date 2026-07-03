@@ -23,6 +23,9 @@ function Flights() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
+  const [dateInput, setDateInput] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
 
@@ -44,15 +47,16 @@ function Flights() {
 
   const [form, setForm] = useState(emptyForm);
 
-  // debounce search
+  // debounce search & date
   useEffect(() => {
     const t = setTimeout(() => {
       setSearch(searchInput);
+      setDateFilter(dateInput);
       setPage(1);
     }, 400);
 
     return () => clearTimeout(t);
-  }, [searchInput]);
+  }, [searchInput, dateInput]);
 
   // FETCH FLIGHTS
   const fetchFlights = useCallback(async () => {
@@ -62,7 +66,7 @@ function Flights() {
       const token = localStorage.getItem("access_token");
 
       const res = await api.get("/admin/flights", {
-        params: { search, page },
+        params: { search, date: dateFilter, page },
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -76,7 +80,7 @@ function Flights() {
     } finally {
       setLoading(false);
     }
-  }, [search, page]);
+  }, [search, dateFilter, page]);
 
   useEffect(() => {
     fetchFlights();
@@ -202,9 +206,15 @@ function Flights() {
             <h4>Flight Management</h4>
           </Col>
 
-          <Col md={4} className="d-flex gap-2">
+          <Col md={6} className="d-flex gap-2 justify-content-end">
             <Form.Control
-              placeholder="Search..."
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+              title="Lọc theo ngày bay"
+            />
+            <Form.Control
+              placeholder="Search Flight No..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
